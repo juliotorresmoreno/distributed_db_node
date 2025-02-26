@@ -1,30 +1,24 @@
-use serde::{Deserialize, Serialize};
-
 #[derive(Debug)]
-struct MessageHeader {
-    body_size: u32,
+pub struct MessageHeader {
+    pub message_id: [u8; 16], // 16-byte message ID (e.g., UUID)
+    pub body_size: u32,       // 4-byte body size
 }
 
 impl MessageHeader {
-    fn to_bytes(&self) -> [u8; 4] {
-        self.body_size.to_be_bytes()
+    /// Serializes the header to a byte array.
+    pub fn to_bytes(&self) -> [u8; 20] {
+        let mut bytes = [0; 20];
+        bytes[..16].copy_from_slice(&self.message_id);
+        bytes[16..20].copy_from_slice(&self.body_size.to_be_bytes()); 
+        bytes
     }
 
-    fn from_bytes(bytes: [u8; 4]) -> Self {
-        let body_size = u32::from_be_bytes(bytes);
-        Self { body_size }
+    pub fn from_bytes(bytes: [u8; 20]) -> Self {
+        let message_id = bytes[..16].try_into().unwrap(); 
+        let body_size = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
+        Self {
+            message_id,
+            body_size,
+        }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct MessageBody {
-    key: String,
-    value: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiResponse<T> {
-    success: bool,
-    data: Option<T>,
-    message: Option<String>,
 }

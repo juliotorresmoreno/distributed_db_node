@@ -20,7 +20,10 @@ async-trait = "0.1" # Soporte para async traits
 axum = "0.8.1" # Framework web (para API REST)
 hyper = { version = "1.6", features = ["full"] } # Cliente HTTP
 tower = "0.5" # Middleware para servicios HTTP
-
+async-recursion = "1.1" # Soporte para recursión asíncrona
+uuid = { version = "1.15.0", features = ["v4"] } # Soporte para UUIDs
+base64 = { version = "0.22"} # Soporte para codificación base64
+hex = "0.4" # Soporte para codificación hexadecimal
 
 [dev-dependencies]
 assertables = "9.5" # Para pruebas

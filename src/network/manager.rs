@@ -2,9 +2,8 @@ use tokio::io::{ AsyncReadExt, AsyncWriteExt };
 use tokio::net::TcpStream;
 use std::io;
 use tokio::time::{ sleep, Duration };
-use crate::network::transport::MessageHeader;
+use crate::network::transport::{ Message, MessageHeader, MessageType };
 use async_recursion::async_recursion;
-use hex;
 
 pub struct Manager {
     address: String,
@@ -50,21 +49,22 @@ impl Manager {
     /// Sends a message to the server.
     /// Automatically reconnects if the connection is lost.
     #[async_recursion]
-    pub async fn send(&mut self, message_id: [u8; 16], body: &[u8]) -> Result<(), io::Error> {
+    pub async fn send(
+        &mut self,
+        message_id: [u8; 16],
+        message_type: MessageType,
+        body: &[u8]
+    ) -> Result<(), io::Error> {
         if let Some(stream) = &mut self.stream {
             let header = MessageHeader {
                 message_id,
+                message_type: message_type as u32,
                 body_size: body.len() as u32,
             };
 
             stream.write_all(&header.to_bytes()).await?;
             stream.write_all(body).await?;
 
-            println!(
-                "Message sent (ID: {:?}, body size: {} bytes)",
-                hex::encode(&header.message_id),
-                header.body_size
-            );
             return Ok(());
         }
 
@@ -73,23 +73,43 @@ impl Manager {
 
     /// Receives a message from the server.
     /// Automatically reconnects if the connection is lost.
-    pub async fn receive(&mut self) -> Result<([u8; 16], Vec<u8>), io::Error> {
+    pub async fn receive(&mut self) -> Result<Message, io::Error> {
         if let Some(stream) = &mut self.stream {
-            let mut header_bytes = [0; 20];
+            // Read the header (24 bytes)
+            let mut header_bytes = [0; 24];
             stream.read_exact(&mut header_bytes).await?;
+
+            // Parse the header
             let header = MessageHeader::from_bytes(header_bytes);
 
+            // Read the body based on the size specified in the header
             let mut body = vec![0; header.body_size as usize];
             stream.read_exact(&mut body).await?;
 
-            println!(
-                "Message received (ID: {:?}, body size: {} bytes)",
-                header.message_id,
-                header.body_size
-            );
-            Ok((header.message_id, body))
+            // Construct and return a Message
+            Ok(Message { header, body })
         } else {
             Err(io::Error::new(io::ErrorKind::NotConnected, "Not connected to the server"))
+        }
+    }
+
+    pub async fn listen(&mut self) {
+        println!("Listening for messages...");
+        loop {
+            match self.receive().await {
+                Ok(message) => {
+                    println!(
+                        "Received message (ID: {}, Type: {}, Body: {:?})",
+                        hex::encode(message.header.message_id),
+                        message.header.message_type,
+                        String::from_utf8_lossy(&message.body)
+                    );
+                }
+                Err(e) => {
+                    println!("Failed to receive message: {}", e);
+                    self.connect().await;
+                }
+            }
         }
     }
 }

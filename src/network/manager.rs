@@ -62,8 +62,8 @@ impl Manager {
                 body_size: body.len() as u32,
             };
 
-            stream.write_all(&header.to_bytes()).await?;
-            stream.write_all(body).await?;
+            let message = Message { header, body: body.to_vec() };
+            stream.write_all(&message.to_bytes()).await?;
 
             return Ok(());
         }
@@ -75,18 +75,14 @@ impl Manager {
     /// Automatically reconnects if the connection is lost.
     pub async fn receive(&mut self) -> Result<Message, io::Error> {
         if let Some(stream) = &mut self.stream {
-            // Read the header (24 bytes)
             let mut header_bytes = [0; 24];
             stream.read_exact(&mut header_bytes).await?;
 
-            // Parse the header
             let header = MessageHeader::from_bytes(header_bytes);
 
-            // Read the body based on the size specified in the header
             let mut body = vec![0; header.body_size as usize];
             stream.read_exact(&mut body).await?;
 
-            // Construct and return a Message
             Ok(Message { header, body })
         } else {
             Err(io::Error::new(io::ErrorKind::NotConnected, "Not connected to the server"))

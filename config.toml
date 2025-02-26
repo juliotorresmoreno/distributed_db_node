@@ -1,0 +1,11 @@
+[network]
+port = 8080
+peers = ["127.0.0.1:8081", "127.0.0.1:8082"]
+
+[api]
+port = 4041
+enabled = true
+
+[storage]
+path = "./data"
+max_size_mb = 1024

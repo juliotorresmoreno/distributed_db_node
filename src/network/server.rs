@@ -3,6 +3,7 @@ use tokio::io::{ AsyncReadExt, AsyncWriteExt };
 use std::sync::{ Arc, Mutex };
 use crate::storage::kv_store::KVStore;
 use std::fmt;
+use log::{ info, error };
 
 pub struct Server {
     port: u16,
@@ -16,17 +17,17 @@ impl Server {
 
     pub async fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         let listener = TcpListener::bind(format!("0.0.0.0:{}", self.port)).await?;
-        println!("TCP Server running on port {}", self.port);
+        info!("TCP Server running on port {}", self.port);
 
         loop {
             let (socket, addr) = listener.accept().await?;
-            println!("New connection from {}", addr);
+            info!("New connection from {}", addr);
 
             let storage = Arc::clone(&self.storage);
 
             tokio::spawn(async move {
                 if let Err(e) = handle_connection(socket, storage).await {
-                    println!("Connection error: {}", e);
+                    error!("Connection error: {}", e);
                 }
             });
         }
@@ -45,7 +46,7 @@ async fn handle_connection(
     }
 
     let request = String::from_utf8_lossy(&buffer[..bytes_read]);
-    println!("Request received: {}", request);
+    info!("Request received: {}", request);
 
     let response = if request.starts_with("GET") {
         let key = request.trim_start_matches("GET ").trim();

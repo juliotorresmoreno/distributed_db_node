@@ -5,6 +5,7 @@ use tokio::time::{ sleep, Duration };
 use async_recursion::async_recursion;
 use super::transport::*;
 use super::handlers::*;
+use log::{ info, error };
 
 pub struct Manager {
     address: String,
@@ -23,18 +24,16 @@ impl Manager {
         &self.address
     }
 
-    /// Connects to the server with automatic reconnection.
-    /// If the connection is lost, it will attempt to reconnect every 5 seconds.
     pub async fn connect(&mut self) {
         loop {
             match TcpStream::connect(&self.address()).await {
                 Ok(stream) => {
                     self.stream = Some(stream);
-                    println!("Connected to server at {}", self.address);
+                    info!("Connected to server at {}", self.address);
                     break;
                 }
                 Err(e) => {
-                    println!(
+                    error!(
                         "Failed to connect to {}: {}. Retrying in 5 seconds...",
                         self.address,
                         e
@@ -45,8 +44,6 @@ impl Manager {
         }
     }
 
-    /// Sends a message to the server.
-    /// Automatically reconnects if the connection is lost.
     #[async_recursion]
     pub async fn send(
         &mut self,
@@ -70,8 +67,6 @@ impl Manager {
         return Err(io::Error::new(io::ErrorKind::NotConnected, "Not connected to the server"));
     }
 
-    /// Receives a message from the server.
-    /// Automatically reconnects if the connection is lost.
     pub async fn receive(&mut self) -> Result<Message, io::Error> {
         if let Some(stream) = &mut self.stream {
             let mut header_bytes = [0; 24];
@@ -88,12 +83,18 @@ impl Manager {
         }
     }
 
-    /// Listens for incoming messages and processes them asynchronously.
     pub async fn listen(&mut self) -> Result<(), io::Error> {
-        println!("Listening for messages...");
+        info!("Listening for messages...");
         loop {
             match self.receive().await {
                 Ok(message) => {
+                    info!(
+                        "Received message (ID: {}, Type: {}, Body: {:?})",
+                        hex::encode(message.header.message_id),
+                        message.header.message_type,
+                        String::from_utf8_lossy(&message.body)
+                    );
+
                     match message.header.message_type {
                         MESSAGE_TYPE_PING => handle_ping(self, &message).await,
                         MESSAGE_TYPE_CREATE_TABLE => handle_create_table(self, &message).await,
@@ -105,17 +106,19 @@ impl Manager {
                         MESSAGE_TYPE_SELECT => handle_select(self, &message).await,
                         MESSAGE_TYPE_UPDATE => handle_update(self, &message).await,
                         MESSAGE_TYPE_DELETE => handle_delete(self, &message).await,
-                        MESSAGE_TYPE_BEGIN_TRANSACTION => handle_begin_transaction(self, &message).await,
+                        MESSAGE_TYPE_BEGIN_TRANSACTION =>
+                            handle_begin_transaction(self, &message).await,
                         MESSAGE_TYPE_COMMIT => handle_commit(self, &message).await,
                         MESSAGE_TYPE_ROLLBACK => handle_rollback(self, &message).await,
                         MESSAGE_TYPE_GREETING => handle_greeting(self, &message).await,
                         MESSAGE_TYPE_WELCOME => handle_welcome(self, &message).await,
-                        MESSAGE_TYPE_UNKNOWN_COMMAND => handle_unknown_command(self, &message).await,
+                        MESSAGE_TYPE_UNKNOWN_COMMAND =>
+                            handle_unknown_command(self, &message).await,
                         _ => handle_unknown_command(self, &message).await,
                     }
                 }
                 Err(e) => {
-                    println!("Failed to receive message: {}", e);
+                    error!("Failed to receive message: {}", e);
                     self.connect().await;
                 }
             }

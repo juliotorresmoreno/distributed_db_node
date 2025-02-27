@@ -96,7 +96,20 @@ impl Manager {
                 Ok(message) => {
                     match message.header.message_type {
                         MESSAGE_TYPE_PING => handle_ping(self, &message).await,
-                        _ => handle_unknown().await,
+                        MESSAGE_TYPE_CREATE_TABLE => handle_create_table(self, &message).await,
+                        MESSAGE_TYPE_DROP_TABLE => handle_drop_table(self, &message).await,
+                        MESSAGE_TYPE_ALTER_TABLE => handle_alter_table(self, &message).await,
+                        MESSAGE_TYPE_CREATE_INDEX => handle_create_index(self, &message).await,
+                        MESSAGE_TYPE_DROP_INDEX => handle_drop_index(self, &message).await,
+                        MESSAGE_TYPE_INSERT => handle_insert(self, &message).await,
+                        MESSAGE_TYPE_SELECT => handle_select(self, &message).await,
+                        MESSAGE_TYPE_UPDATE => handle_update(self, &message).await,
+                        MESSAGE_TYPE_DELETE => handle_delete(self, &message).await,
+                        MESSAGE_TYPE_BEGIN_TRANSACTION => handle_begin_transaction(self, &message).await,
+                        MESSAGE_TYPE_COMMIT => handle_commit(self, &message).await,
+                        MESSAGE_TYPE_ROLLBACK => handle_rollback(self, &message).await,
+
+                        _ => handle_unknown_command(self, &message).await,
                     }
                 }
                 Err(e) => {

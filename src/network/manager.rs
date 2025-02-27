@@ -1,11 +1,11 @@
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{ AsyncReadExt, AsyncWriteExt };
 use tokio::net::TcpStream;
 use std::io;
-use tokio::time::{sleep, Duration};
+use tokio::time::{ sleep, Duration };
 use async_recursion::async_recursion;
 use super::transport::*;
 use std::sync::Arc;
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::{ Mutex, Semaphore };
 
 pub struct Manager {
     address: String,
@@ -24,8 +24,8 @@ impl Manager {
         Self {
             address: address.to_string(),
             stream: None,
-            shared_data: Arc::new(Mutex::new(SharedData::default())), 
-            semaphore: Arc::new(Semaphore::new(100)), 
+            shared_data: Arc::new(Mutex::new(SharedData::default())),
+            semaphore: Arc::new(Semaphore::new(100)),
         }
     }
 
@@ -121,7 +121,7 @@ impl Manager {
                             MESSAGE_TYPE_PING => {
                                 println!("Processing PING message");
                                 let mut data = shared_data.lock().await;
-                                data.counter += 1; 
+                                data.counter += 1;
                                 println!("Counter: {}", data.counter);
                             }
                             _ => {

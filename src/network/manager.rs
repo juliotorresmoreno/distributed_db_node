@@ -4,19 +4,11 @@ use std::io;
 use tokio::time::{ sleep, Duration };
 use async_recursion::async_recursion;
 use super::transport::*;
-use std::sync::Arc;
-use tokio::sync::{ Mutex, Semaphore };
+use super::handlers::*;
 
 pub struct Manager {
     address: String,
     stream: Option<TcpStream>,
-    shared_data: Arc<Mutex<SharedData>>,
-    semaphore: Arc<Semaphore>,
-}
-
-#[derive(Default)]
-struct SharedData {
-    counter: u32,
 }
 
 impl Manager {
@@ -24,8 +16,6 @@ impl Manager {
         Self {
             address: address.to_string(),
             stream: None,
-            shared_data: Arc::new(Mutex::new(SharedData::default())),
-            semaphore: Arc::new(Semaphore::new(100)),
         }
     }
 
@@ -104,33 +94,10 @@ impl Manager {
         loop {
             match self.receive().await {
                 Ok(message) => {
-                    println!(
-                        "Received message (ID: {}, Type: {}, Body: {:?})",
-                        hex::encode(message.header.message_id),
-                        message.header.message_type,
-                        String::from_utf8_lossy(&message.body)
-                    );
-
-                    let shared_data = Arc::clone(&self.shared_data);
-                    let semaphore = Arc::clone(&self.semaphore);
-
-                    tokio::spawn(async move {
-                        let permit = semaphore.acquire().await.unwrap();
-
-                        match message.header.message_type {
-                            MESSAGE_TYPE_PING => {
-                                println!("Processing PING message");
-                                let mut data = shared_data.lock().await;
-                                data.counter += 1;
-                                println!("Counter: {}", data.counter);
-                            }
-                            _ => {
-                                println!("Processing unknown message type");
-                            }
-                        }
-
-                        drop(permit);
-                    });
+                    match message.header.message_type {
+                        MESSAGE_TYPE_PING => handle_ping(self, &message).await,
+                        _ => handle_unknown().await,
+                    }
                 }
                 Err(e) => {
                     println!("Failed to receive message: {}", e);

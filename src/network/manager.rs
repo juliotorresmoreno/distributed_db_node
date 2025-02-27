@@ -108,7 +108,9 @@ impl Manager {
                         MESSAGE_TYPE_BEGIN_TRANSACTION => handle_begin_transaction(self, &message).await,
                         MESSAGE_TYPE_COMMIT => handle_commit(self, &message).await,
                         MESSAGE_TYPE_ROLLBACK => handle_rollback(self, &message).await,
-
+                        MESSAGE_TYPE_GREETING => handle_greeting(self, &message).await,
+                        MESSAGE_TYPE_WELCOME => handle_welcome(self, &message).await,
+                        MESSAGE_TYPE_UNKNOWN_COMMAND => handle_unknown_command(self, &message).await,
                         _ => handle_unknown_command(self, &message).await,
                     }
                 }

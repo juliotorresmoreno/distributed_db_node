@@ -1,21 +1,23 @@
-#[allow(dead_code)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MessageType {
-    Ping = 1,
-    CreateTable = 2,
-    DropTable = 3,
-    AlterTable = 4,
-    CreateIndex = 5,
-    DropIndex = 6,
-    Insert = 7,
-    Select = 8,
-    Update = 9,
-    Delete = 10,
-    BeginTransaction = 11,
-    Commit = 12,
-    Rollback = 13,
-    UnknownCommand = 255,
-}
+
+type MessageType = u32;
+
+pub const MESSAGE_TYPE_PING: MessageType = 1;
+pub const MESSAGE_TYPE_CREATE_TABLE: MessageType = 2;
+pub const MESSAGE_TYPE_DROP_TABLE: MessageType = 3;
+pub const MESSAGE_TYPE_ALTER_TABLE: MessageType = 4;
+pub const MESSAGE_TYPE_CREATE_INDEX: MessageType = 5;
+pub const MESSAGE_TYPE_DROP_INDEX: MessageType = 6;
+pub const MESSAGE_TYPE_INSERT: MessageType = 7;
+pub const MESSAGE_TYPE_SELECT: MessageType = 8;
+pub const MESSAGE_TYPE_UPDATE: MessageType = 9;
+pub const MESSAGE_TYPE_DELETE: MessageType = 10;
+pub const MESSAGE_TYPE_BEGIN_TRANSACTION: MessageType = 11;
+pub const MESSAGE_TYPE_COMMIT: MessageType = 12;
+pub const MESSAGE_TYPE_ROLLBACK: MessageType = 13;
+pub const MESSAGE_TYPE_PONG: MessageType = 14;
+pub const MESSAGE_TYPE_GREETING: MessageType = 15;
+pub const MESSAGE_TYPE_WELCOME: MessageType = 16;
+pub const MESSAGE_TYPE_UNKNOWN_COMMAND: MessageType = 255;
 
 #[derive(Debug)]
 pub struct MessageHeader {
@@ -37,14 +39,6 @@ impl Message {
         bytes.extend_from_slice(&self.body);
 
         return bytes;
-    }
-
-    pub fn from_bytes(bytes: Vec<u8>) -> Self {
-        let header_bytes = bytes[..24].try_into().unwrap();
-        let header = MessageHeader::from_bytes(header_bytes);
-        let body = bytes[24..].to_vec();
-
-        return Self { header, body };
     }
 }
 

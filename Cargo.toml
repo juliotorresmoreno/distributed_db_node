@@ -24,6 +24,7 @@ async-recursion = "1.1" # Soporte para recursión asíncrona
 uuid = { version = "1.15.0", features = ["v4"] } # Soporte para UUIDs
 base64 = { version = "0.22"} # Soporte para codificación base64
 hex = "0.4" # Soporte para codificación hexadecimal
+futures = "0.3" # Soporte para futuros
 
 [dev-dependencies]
 assertables = "9.5" # Para pruebas

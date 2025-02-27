@@ -14,7 +14,6 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct NetworkConfig {
     pub port: u16,
-    pub peers: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]

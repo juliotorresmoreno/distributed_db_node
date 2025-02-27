@@ -1,25 +1,34 @@
-use tokio::io::{ AsyncReadExt, AsyncWriteExt };
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use std::io;
-use tokio::time::{ sleep, Duration };
-use crate::network::transport::{ Message, MessageHeader, MessageType };
+use tokio::time::{sleep, Duration};
 use async_recursion::async_recursion;
+use super::transport::*;
+use std::sync::Arc;
+use tokio::sync::{Mutex, Semaphore};
 
 pub struct Manager {
     address: String,
     stream: Option<TcpStream>,
+    shared_data: Arc<Mutex<SharedData>>,
+    semaphore: Arc<Semaphore>,
+}
+
+#[derive(Default)]
+struct SharedData {
+    counter: u32,
 }
 
 impl Manager {
-    /// Creates a new Manager with the specified server address.
     pub fn new(address: &str) -> Self {
         Self {
             address: address.to_string(),
             stream: None,
+            shared_data: Arc::new(Mutex::new(SharedData::default())), 
+            semaphore: Arc::new(Semaphore::new(100)), 
         }
     }
 
-    /// Returns the server address.
     pub fn address(&self) -> &str {
         &self.address
     }
@@ -52,7 +61,7 @@ impl Manager {
     pub async fn send(
         &mut self,
         message_id: [u8; 16],
-        message_type: MessageType,
+        message_type: u32,
         body: &[u8]
     ) -> Result<(), io::Error> {
         if let Some(stream) = &mut self.stream {
@@ -89,7 +98,8 @@ impl Manager {
         }
     }
 
-    pub async fn listen(&mut self) {
+    /// Listens for incoming messages and processes them asynchronously.
+    pub async fn listen(&mut self) -> Result<(), io::Error> {
         println!("Listening for messages...");
         loop {
             match self.receive().await {
@@ -100,6 +110,27 @@ impl Manager {
                         message.header.message_type,
                         String::from_utf8_lossy(&message.body)
                     );
+
+                    let shared_data = Arc::clone(&self.shared_data);
+                    let semaphore = Arc::clone(&self.semaphore);
+
+                    tokio::spawn(async move {
+                        let permit = semaphore.acquire().await.unwrap();
+
+                        match message.header.message_type {
+                            MESSAGE_TYPE_PING => {
+                                println!("Processing PING message");
+                                let mut data = shared_data.lock().await;
+                                data.counter += 1; 
+                                println!("Counter: {}", data.counter);
+                            }
+                            _ => {
+                                println!("Processing unknown message type");
+                            }
+                        }
+
+                        drop(permit);
+                    });
                 }
                 Err(e) => {
                     println!("Failed to receive message: {}", e);

@@ -21,6 +21,7 @@ impl KVStore {
         self.store.insert(key, value);
     }
 
+    #[allow(dead_code)]
     pub fn delete(&mut self, key: &str) -> bool {
         if !self.store.contains_key(key) {
             return false;

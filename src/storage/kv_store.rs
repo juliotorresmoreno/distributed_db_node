@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use crate::protocol::createTable::ColumnDefinition;
+
 #[derive(Debug, Clone)]
 pub struct KVStore {
     store: HashMap<String, String>,
@@ -8,9 +10,19 @@ pub struct KVStore {
 
 impl KVStore {
     pub fn new() -> Arc<Mutex<Self>> {
-        Arc::new(Mutex::new(Self {
+        return Arc::new(Mutex::new(Self {
             store: HashMap::new(),
-        }))
+        }));
+    }
+
+    pub fn create_database(&mut self, database_name: &str) {
+        println!("Creating database: {}", database_name);
+    }
+
+    pub fn create_table(&mut self, table_name: &str, columns: &[ColumnDefinition], storage: &str) {
+        println!("Creating table: {}", table_name);
+        println!("Columns: {:?}", columns);
+        println!("Storage: {}", storage);
     }
 
     pub fn get(&self, key: &str) -> Option<String> {

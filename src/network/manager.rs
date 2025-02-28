@@ -3,6 +3,9 @@ use tokio::net::TcpStream;
 use std::io;
 use tokio::time::{ sleep, Duration };
 use async_recursion::async_recursion;
+use std::sync::{ Arc, Mutex };
+use crate::storage::kv_store::KVStore;
+
 use super::transport::*;
 use super::handlers::*;
 use log::{ info, error };
@@ -10,14 +13,20 @@ use log::{ info, error };
 pub struct Manager {
     address: String,
     stream: Option<TcpStream>,
+    storage: Arc<Mutex<KVStore>>,
 }
 
 impl Manager {
-    pub fn new(address: &str) -> Self {
-        Self {
+    pub fn new(address: &str, storage: Arc<Mutex<KVStore>>) -> Self {
+        return Self {
             address: address.to_string(),
             stream: None,
-        }
+            storage: storage,
+        };
+    }
+
+    pub fn storage(&self) -> Arc<Mutex<KVStore>> {
+        return Arc::clone(&self.storage);
     }
 
     pub fn address(&self) -> &str {
@@ -88,14 +97,11 @@ impl Manager {
         loop {
             match self.receive().await {
                 Ok(message) => {
-                    info!(
-                        "Received message (ID: {}, Type: {}, Body: {:?})",
-                        hex::encode(message.header.message_id),
-                        message.header.message_type,
-                        String::from_utf8_lossy(&message.body)
-                    );
-
                     match message.header.message_type {
+                        MESSAGE_TYPE_CREATE_DATABASE =>
+                            handle_create_database(self, &message).await,
+                        MESSAGE_TYPE_DROP_DATABASE => handle_drop_database(self, &message).await,
+                        MESSAGE_TYPE_SHOW_DATABASES => handle_show_databases(self, &message).await,
                         MESSAGE_TYPE_PING => handle_ping(self, &message).await,
                         MESSAGE_TYPE_CREATE_TABLE => handle_create_table(self, &message).await,
                         MESSAGE_TYPE_DROP_TABLE => handle_drop_table(self, &message).await,

@@ -1,6 +1,7 @@
 mod network;
 mod storage;
 mod utils;
+mod protocol;
 
 use utils::logger::init_logger;
 use utils::config::Config;
@@ -8,6 +9,7 @@ use network::manager::Manager;
 use uuid::Uuid;
 use tokio::signal;
 use std::sync::Arc;
+use std::process::exit;
 use tokio::sync::Notify;
 use network::transport::MESSAGE_TYPE_PING;
 
@@ -19,7 +21,7 @@ async fn main() {
     let storage = storage::kv_store::KVStore::new();
     let server = network::server::Server::new(config.network.port, storage.clone());
 
-    let mut manager = Manager::new("localhost:4040");
+    let mut manager = Manager::new("localhost:4040", storage.clone());
     manager.connect().await;
 
     let message_id = *Uuid::new_v4().as_bytes();
@@ -42,6 +44,7 @@ async fn main() {
     tokio::select! {
         _ = signal::ctrl_c() => {
             shutdown_signal_clone.notify_one();
+            exit(0);
         }
         _ = shutdown_signal.notified() => {}
     }

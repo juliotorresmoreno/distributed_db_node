@@ -1,7 +1,13 @@
 use super::transport::*;
 use crate::{
     network::server::Server,
-    protocol::{ createDatabase::CreateDatabaseStatement, statement::Statement },
+    protocol::{
+        management::{
+            createDatabase::CreateDatabaseStatement,
+            dropDatabase::DropDatabaseStatement, useDatabase::UseDatabaseStatement,
+        },
+        statement::Statement,
+    },
 };
 use log::{ info, error };
 use crate::protocol::createTable::CreateTableStatement;
@@ -32,10 +38,55 @@ pub async fn handle_create_database(server: &mut Server, message: &Message) {
 
 pub async fn handle_drop_database(server: &mut Server, message: &Message) {
     info!("Received DROP DATABASE");
+
+    let stm = match DropDatabaseStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for DROP DATABASE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().drop_database(&stm.database_name);
+
+    let body = b"DATABASE DROPPED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_DROP_DATABASE, body).await {
+        Ok(_) => info!("Database dropped"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_show_databases(server: &mut Server, message: &Message) {
     info!("Received SHOW DATABASES");
+
+    let databases = server.storage().lock().unwrap().show_databases();
+
+    let databases_str = databases.join("\n");
+    let body = databases_str.as_bytes();
+    match server.send(message.header.message_id, MESSAGE_TYPE_SHOW_DATABASES, body).await {
+        Ok(_) => info!("Databases sent"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
+}
+
+pub async fn handle_use_database(server: &mut Server, message: &Message) {
+    info!("Received USE DATABASE");
+
+    let stm = match UseDatabaseStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for USE DATABASE: {}", e);
+            return;
+        }
+    };
+
+    // server.storage().lock().unwrap().use_database(&stm.database_name); en session
+
+    let body = [b"DATABASE USED", stm.database_name.as_bytes()].concat();
+    match server.send(message.header.message_id, MESSAGE_TYPE_USE_DATABASE, &body).await {
+        Ok(_) => info!("Database used"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 // =====================

@@ -5,6 +5,7 @@ pub type MessageType = u32;
 pub const MESSAGE_TYPE_CREATE_DATABASE: MessageType = 1;
 pub const MESSAGE_TYPE_DROP_DATABASE: MessageType = 2;
 pub const MESSAGE_TYPE_SHOW_DATABASES: MessageType = 3;
+pub const MESSAGE_TYPE_USE_DATABASE: MessageType = 4;
 
 // Table Operations
 pub const MESSAGE_TYPE_CREATE_TABLE: MessageType = 10;

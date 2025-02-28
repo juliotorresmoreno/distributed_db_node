@@ -30,6 +30,7 @@ pub enum MessageType {
     CreateDatabase,
     DropDatabase,
     ShowDatabases,
+    UseDatabase,
 
     // =====================
     // Table Operations

@@ -48,7 +48,7 @@ impl DBEngine {
     pub fn show_databases(&self) -> Vec<String> {
         println!("show_databases");
         // To be implemented later
-        Vec::new()
+        return Vec::new();
     }
 
     // =====================

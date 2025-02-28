@@ -12,13 +12,14 @@ use std::sync::Arc;
 use std::process::exit;
 use tokio::sync::Notify;
 use network::transport::MESSAGE_TYPE_PING;
+use storage::engine::Engine as DBEngine;
 
 #[tokio::main]
 async fn main() {
     init_logger();
 
     let config = Config::load("config.toml").expect("Failed to load config");
-    let storage = storage::dbengine::DBEngine::new();
+    let storage = DBEngine::new();
 
     let mut server = Server::new(storage.clone());
     server.connect(&config.master.addr).await;

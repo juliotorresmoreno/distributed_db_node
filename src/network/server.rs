@@ -4,7 +4,7 @@ use std::io;
 use tokio::time::{ sleep, Duration };
 use async_recursion::async_recursion;
 use std::sync::{ Arc, Mutex };
-use crate::storage::dbengine::DBEngine;
+use crate::storage::engine::Engine as DBEngine;
 use super::transport::*;
 use super::handlers::*;
 use log::{ info, error };

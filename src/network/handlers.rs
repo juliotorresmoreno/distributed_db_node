@@ -318,7 +318,6 @@ pub async fn handle_show_indexes(server: &mut Server, message: &Message) {
 // =====================
 // Data Operations
 // =====================
-
 pub async fn handle_insert(server: &mut Server, message: &Message) {
     info!("Received INSERT");
 
@@ -338,6 +337,7 @@ pub async fn handle_insert(server: &mut Server, message: &Message) {
         Err(e) => error!("Failed to send response: {}", e),
     }
 }
+
 
 pub async fn handle_select(server: &mut Server, message: &Message) {
     info!("Received SELECT");
@@ -484,14 +484,44 @@ pub async fn handle_commit(server: &mut Server, message: &Message) {
 
 pub async fn handle_rollback(server: &mut Server, message: &Message) {
     info!("Received ROLLBACK");
+
+    let body = b"TRANSACTION ROLLED BACK";
+    match server.send(message.header.message_id, MESSAGE_TYPE_ROLLBACK, body).await {
+        Ok(_) => {
+            info!("ROLLBACK sent");
+        }
+        Err(e) => {
+            error!("Failed to send ROLLBACK: {}", e);
+        }
+    }
 }
 
 pub async fn handle_savepoint(server: &mut Server, message: &Message) {
     info!("Received SAVEPOINT");
+
+    let body = b"SAVEPOINT CREATED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_SAVEPOINT, body).await {
+        Ok(_) => {
+            info!("SAVEPOINT sent");
+        }
+        Err(e) => {
+            error!("Failed to send SAVEPOINT: {}", e);
+        }
+    }
 }
 
 pub async fn handle_release_savepoint(server: &mut Server, message: &Message) {
     info!("Received RELEASE SAVEPOINT");
+
+    let body = b"SAVEPOINT RELEASED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_RELEASE_SAVEPOINT, body).await {
+        Ok(_) => {
+            info!("RELEASE SAVEPOINT sent");
+        }
+        Err(e) => {
+            error!("Failed to send RELEASE SAVEPOINT: {}", e);
+        }
+    }
 }
 
 // =====================
@@ -515,12 +545,42 @@ pub async fn handle_ping(server: &mut Server, message: &Message) {
 
 pub async fn handle_greeting(server: &mut Server, message: &Message) {
     info!("Received GREETING");
+
+    let body = b"GREETINGS";
+    match server.send(message.header.message_id, MESSAGE_TYPE_GREETING, body).await {
+        Ok(_) => {
+            info!("GREETINGS sent");
+        }
+        Err(e) => {
+            error!("Failed to send GREETINGS: {}", e);
+        }
+    }
 }
 
 pub async fn handle_welcome(server: &mut Server, message: &Message) {
     info!("Received WELCOME");
+
+    let body = b"WELCOME";
+    match server.send(message.header.message_id, MESSAGE_TYPE_WELCOME, body).await {
+        Ok(_) => {
+            info!("WELCOME sent");
+        }
+        Err(e) => {
+            error!("Failed to send WELCOME: {}", e);
+        }
+    }
 }
 
 pub async fn handle_unknown_command(server: &mut Server, message: &Message) {
     error!("Received UNKNOWN COMMAND");
+
+    let body = b"Unsuppported command";
+    match server.send(message.header.message_id, MESSAGE_TYPE_UNKNOWN_COMMAND, body).await {
+        Ok(_) => {
+            info!("Unknown command sent");
+        }
+        Err(e) => {
+            error!("Failed to send unknown command: {}", e);
+        }
+    }
 }

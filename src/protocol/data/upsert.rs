@@ -5,55 +5,40 @@ use std::error::Error;
 use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SelectStatement {
+pub struct UpsertStatement {
     #[serde(rename = "table_name")]
     pub table_name: String,
 
     #[serde(rename = "columns")]
     pub columns: Vec<String>,
 
-    #[serde(rename = "conditions")]
-    pub conditions: HashMap<String, String>,
+    #[serde(rename = "values")]
+    pub values: HashMap<String, String>,
 
-    #[serde(rename = "limit")]
-    pub limit: Option<u32>,
-
-    #[serde(rename = "offset")]
-    pub offset: Option<u32>,
-
-    #[serde(rename = "order_by")]
-    pub order_by: Option<String>,
-
-    #[serde(rename = "order_direction")]
-    pub order_direction: Option<String>,
+    #[serde(rename = "conflict_columns")]
+    pub conflict_columns: Vec<String>,
 }
 
-impl SelectStatement {
+impl UpsertStatement {
     #[allow(dead_code)]
     pub fn new(
         table_name: &str,
         columns: Vec<String>,
-        conditions: HashMap<String, String>,
-        limit: Option<u32>,
-        offset: Option<u32>,
-        order_by: Option<String>,
-        order_direction: Option<String>
+        values: HashMap<String, String>,
+        conflict_columns: Vec<String>
     ) -> Self {
         Self {
             table_name: table_name.to_string(),
             columns,
-            conditions,
-            limit,
-            offset,
-            order_by,
-            order_direction,
+            values,
+            conflict_columns,
         }
     }
 }
 
-impl Statement for SelectStatement {
+impl Statement for UpsertStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::Select
+        MessageType::Upsert
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -81,7 +66,7 @@ impl Statement for SelectStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: SelectStatement = from_slice(msgpack_data)?;
+        let stmt: UpsertStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

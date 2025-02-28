@@ -2,22 +2,26 @@ use super::transport::*;
 use crate::{
     network::server::Server,
     protocol::{
-        data::insert::InsertStatement, index::{
+        data::{ bulk_insert::BulkInsertStatement, delete::DeleteStatement, insert::InsertStatement, select::SelectStatement, update::UpdateStatement },
+        index::{
             create_index::CreateIndexStatement,
             drop_index::DropIndexStatement,
             show_indexes::ShowIndexesStatement,
-        }, management::{
+        },
+        management::{
             create_database::CreateDatabaseStatement,
             drop_database::DropDatabaseStatement,
             use_database::UseDatabaseStatement,
-        }, operations::{
+        },
+        operations::{
             alter_table::AlterTableStatement,
             create_table::CreateTableStatement,
             describe_table::DescribeTableStatement,
             drop_table::DropTableStatement,
             rename_table::RenameTableStatement,
             truncate_table::TruncateTableStatement,
-        }, statement::Statement
+        },
+        statement::Statement, transaction::begin_transaction::BeginTransactionStatement,
     },
 };
 use log::{ info, error };
@@ -337,22 +341,107 @@ pub async fn handle_insert(server: &mut Server, message: &Message) {
 
 pub async fn handle_select(server: &mut Server, message: &Message) {
     info!("Received SELECT");
+
+    let stm = match SelectStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for SELECT: {}", e);
+            return;
+        }
+    };
+
+    let rows = server.storage().lock().unwrap().select("", &stm.table_name);
+
+    let rows_str: String = rows
+        .iter()
+        .map(|row| format!("{:?}", row))
+        .collect::<Vec<String>>()
+        .join("\n");
+    let body = rows_str.as_bytes();
+    match server.send(message.header.message_id, MESSAGE_TYPE_SELECT, body).await {
+        Ok(_) => info!("Rows sent"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_update(server: &mut Server, message: &Message) {
     info!("Received UPDATE");
+
+    let stm = match UpdateStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for UPDATE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().update("", &stm.table_name, &stm.updates);
+
+    let body = b"ROWS UPDATED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_UPDATE, body).await {
+        Ok(_) => info!("Rows updated"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_delete(server: &mut Server, message: &Message) {
     info!("Received DELETE");
+
+    let stm = match DeleteStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for DELETE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().delete("", &stm.table_name);
+
+    let body = b"ROWS DELETED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_DELETE, body).await {
+        Ok(_) => info!("Rows deleted"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_bulk_insert(server: &mut Server, message: &Message) {
     info!("Received BULK INSERT");
+
+    let stm = match BulkInsertStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for BULK INSERT: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().bulk_insert("", &stm.table_name, &stm.columns, &stm.values);
+
+    let body = b"ROWS INSERTED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_BULK_INSERT, body).await {
+        Ok(_) => info!("Rows inserted"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_upsert(server: &mut Server, message: &Message) {
     info!("Received UPSERT");
+
+    let stm = match UpdateStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for UPSERT: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().upsert("", &stm.table_name, &stm.updates);
+
+    let body = b"ROWS UPSERTED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_UPSERT, body).await {
+        Ok(_) => info!("Rows upserted"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 // =====================
@@ -361,10 +450,36 @@ pub async fn handle_upsert(server: &mut Server, message: &Message) {
 
 pub async fn handle_begin_transaction(server: &mut Server, message: &Message) {
     info!("Received BEGIN TRANSACTION");
+
+    let stm = match BeginTransactionStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for BEGIN TRANSACTION: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().begin_transaction(&stm.transaction_id, &stm.isolation_level);
+
+    let body = b"TRANSACTION BEGUN";
+    match server.send(message.header.message_id, MESSAGE_TYPE_BEGIN_TRANSACTION, body).await {
+        Ok(_) => info!("Transaction begun"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_commit(server: &mut Server, message: &Message) {
     info!("Received COMMIT");
+
+    let body = b"TRANSACTION COMMITTED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_COMMIT, body).await {
+        Ok(_) => {
+            info!("COMMIT sent");
+        }
+        Err(e) => {
+            error!("Failed to send COMMIT: {}", e);
+        }
+    }
 }
 
 pub async fn handle_rollback(server: &mut Server, message: &Message) {
@@ -396,10 +511,6 @@ pub async fn handle_ping(server: &mut Server, message: &Message) {
             error!("Failed to send PONG: {}", e);
         }
     }
-}
-
-pub async fn handle_pong(server: &mut Server, message: &Message) {
-    info!("Received PONG");
 }
 
 pub async fn handle_greeting(server: &mut Server, message: &Message) {

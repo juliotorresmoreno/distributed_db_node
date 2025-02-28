@@ -1,59 +1,30 @@
 use serde::{ Serialize, Deserialize };
 use rmp_serde::{ to_vec_named, from_slice };
-use std::collections::HashMap;
 use std::error::Error;
 use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SelectStatement {
-    #[serde(rename = "table_name")]
-    pub table_name: String,
+pub struct BeginTransactionStatement {
+    #[serde(rename = "transaction_id")]
+    pub transaction_id: String,
 
-    #[serde(rename = "columns")]
-    pub columns: Vec<String>,
-
-    #[serde(rename = "conditions")]
-    pub conditions: HashMap<String, String>,
-
-    #[serde(rename = "limit")]
-    pub limit: Option<u32>,
-
-    #[serde(rename = "offset")]
-    pub offset: Option<u32>,
-
-    #[serde(rename = "order_by")]
-    pub order_by: Option<String>,
-
-    #[serde(rename = "order_direction")]
-    pub order_direction: Option<String>,
+    #[serde(rename = "isolation_level")]
+    pub isolation_level: Option<String>,
 }
 
-impl SelectStatement {
+impl BeginTransactionStatement {
     #[allow(dead_code)]
-    pub fn new(
-        table_name: &str,
-        columns: Vec<String>,
-        conditions: HashMap<String, String>,
-        limit: Option<u32>,
-        offset: Option<u32>,
-        order_by: Option<String>,
-        order_direction: Option<String>
-    ) -> Self {
+    pub fn new(transaction_id: &str, isolation_level: Option<String>) -> Self {
         Self {
-            table_name: table_name.to_string(),
-            columns,
-            conditions,
-            limit,
-            offset,
-            order_by,
-            order_direction,
+            transaction_id: transaction_id.to_string(),
+            isolation_level,
         }
     }
 }
 
-impl Statement for SelectStatement {
+impl Statement for BeginTransactionStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::Select
+        MessageType::BeginTransaction
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -81,7 +52,7 @@ impl Statement for SelectStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: SelectStatement = from_slice(msgpack_data)?;
+        let stmt: BeginTransactionStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

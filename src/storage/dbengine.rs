@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{ Arc, Mutex };
+
 use crate::protocol::statement::ColumnDefinition;
 
 #[derive(Debug, Clone)]
@@ -107,7 +108,14 @@ impl DBEngine {
     // =====================
     // Index Operations
     // =====================
-    pub fn create_index(&mut self, database_name: &str, table_name: &str, index_name: &str, columns: &Vec<String>, unique: bool) {
+    pub fn create_index(
+        &mut self,
+        database_name: &str,
+        table_name: &str,
+        index_name: &str,
+        columns: &Vec<String>,
+        unique: bool
+    ) {
         println!("create_index: {} in {} on {}", index_name, database_name, table_name);
         println!("Columns: {:?}", columns);
         println!("Unique: {}", unique);
@@ -130,7 +138,12 @@ impl DBEngine {
     // =====================
 
     /// Inserts a new row into a table
-    pub fn insert(&mut self, database_name: &str, table_name: &str, row: &Vec<HashMap<String, String>>) {
+    pub fn insert(
+        &mut self,
+        database_name: &str,
+        table_name: &str,
+        row: &Vec<HashMap<String, String>>
+    ) {
         println!("insert into {} in {}", table_name, database_name);
         // To be implemented later
     }
@@ -143,7 +156,7 @@ impl DBEngine {
     }
 
     /// Updates rows in a table
-    pub fn update(&mut self, database_name: &str, table_name: &str, row: HashMap<String, String>) {
+    pub fn update(&mut self, database_name: &str, table_name: &str, row: &HashMap<String, String>) {
         println!("update in {} in {}", table_name, database_name);
         // To be implemented later
     }
@@ -151,6 +164,34 @@ impl DBEngine {
     /// Deletes rows from a table
     pub fn delete(&mut self, database_name: &str, table_name: &str) {
         println!("delete from {} in {}", table_name, database_name);
+        // To be implemented later
+    }
+
+    /// Bulk inserts rows into a table
+    pub fn bulk_insert(
+        &mut self,
+        database_name: &str,
+        table_name: &str,
+        rows: &Vec<String>,
+        values: &Vec<HashMap<String, String>>
+    ) {
+        println!("bulk_insert into {} in {}", table_name, database_name);
+        // To be implemented later
+    }
+
+    /// Upserts rows into a table
+    pub fn upsert(&mut self, database_name: &str, table_name: &str, row: &HashMap<String, String>) {
+        println!("upsert into {} in {}", table_name, database_name);
+        // To be implemented later
+    }
+
+    // =====================
+    // Transaction Management
+    // =====================
+
+    /// Begins a new transaction
+    pub fn begin_transaction(&mut self, transaction_id: &str, isolation_level: &Option<String>) {
+        println!("begin_transaction: {}", transaction_id);
         // To be implemented later
     }
 }

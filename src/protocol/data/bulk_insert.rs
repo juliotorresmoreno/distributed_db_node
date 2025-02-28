@@ -5,55 +5,35 @@ use std::error::Error;
 use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SelectStatement {
+pub struct BulkInsertStatement {
     #[serde(rename = "table_name")]
     pub table_name: String,
 
     #[serde(rename = "columns")]
     pub columns: Vec<String>,
 
-    #[serde(rename = "conditions")]
-    pub conditions: HashMap<String, String>,
-
-    #[serde(rename = "limit")]
-    pub limit: Option<u32>,
-
-    #[serde(rename = "offset")]
-    pub offset: Option<u32>,
-
-    #[serde(rename = "order_by")]
-    pub order_by: Option<String>,
-
-    #[serde(rename = "order_direction")]
-    pub order_direction: Option<String>,
+    #[serde(rename = "values")]
+    pub values: Vec<HashMap<String, String>>,
 }
 
-impl SelectStatement {
+impl BulkInsertStatement {
     #[allow(dead_code)]
     pub fn new(
         table_name: &str,
         columns: Vec<String>,
-        conditions: HashMap<String, String>,
-        limit: Option<u32>,
-        offset: Option<u32>,
-        order_by: Option<String>,
-        order_direction: Option<String>
+        values: Vec<HashMap<String, String>>
     ) -> Self {
         Self {
             table_name: table_name.to_string(),
             columns,
-            conditions,
-            limit,
-            offset,
-            order_by,
-            order_direction,
+            values,
         }
     }
 }
 
-impl Statement for SelectStatement {
+impl Statement for BulkInsertStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::Select
+        MessageType::BulkInsert
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -81,7 +61,7 @@ impl Statement for SelectStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: SelectStatement = from_slice(msgpack_data)?;
+        let stmt: BulkInsertStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

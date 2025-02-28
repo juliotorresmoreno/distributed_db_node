@@ -17,7 +17,7 @@ pub struct InsertStatement {
 }
 
 impl InsertStatement {
-    #[allow(unused)]
+    #[allow(dead_code)]
     pub fn new(
         table_name: &str,
         columns: Vec<String>,

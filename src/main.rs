@@ -20,8 +20,8 @@ async fn main() {
     let config = Config::load("config.toml").expect("Failed to load config");
     let storage = storage::dbengine::DBEngine::new();
 
-    let mut server = Server::new(&config.master.addr, storage.clone());
-    server.connect().await;
+    let mut server = Server::new(storage.clone());
+    server.connect(&config.master.addr).await;
 
     let message_id = *Uuid::new_v4().as_bytes();
     let message_body = b"Hello, server!";

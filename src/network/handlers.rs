@@ -4,13 +4,16 @@ use crate::{
     protocol::{
         management::{
             createDatabase::CreateDatabaseStatement,
-            dropDatabase::DropDatabaseStatement, useDatabase::UseDatabaseStatement,
+            dropDatabase::DropDatabaseStatement,
+            useDatabase::UseDatabaseStatement,
+        },
+        operations::{
+            alterTable::AlterTableStatement, createTable::CreateTableStatement, describeTable::DescribeTableStatement, dropTable::DropTableStatement, renameTable::RenameTableStatement, truncateTable::TruncateTableStatement
         },
         statement::Statement,
     },
 };
 use log::{ info, error };
-use crate::protocol::createTable::CreateTableStatement;
 
 // =====================
 // Database Management
@@ -115,26 +118,116 @@ pub async fn handle_create_table(server: &mut Server, message: &Message) {
 
 pub async fn handle_drop_table(server: &mut Server, message: &Message) {
     info!("Received DROP TABLE");
+
+    let stm = match DropTableStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for DROP TABLE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().drop_table("", &stm.table_name);
+
+    let body = b"TABLE DROPPED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_DROP_TABLE, body).await {
+        Ok(_) => info!("Table dropped"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_alter_table(server: &mut Server, message: &Message) {
     info!("Received ALTER TABLE");
+
+    let stm = match AlterTableStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for ALTER TABLE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().alter_table("", &stm.table_name);
+
+    let body = b"TABLE ALTERED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_ALTER_TABLE, body).await {
+        Ok(_) => info!("Table altered"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_rename_table(server: &mut Server, message: &Message) {
     info!("Received RENAME TABLE");
+
+    let stm = match RenameTableStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for RENAME TABLE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().rename_table("", &stm.old_table_name, &stm.new_table_name);
+
+    let body = b"TABLE RENAMED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_RENAME_TABLE, body).await {
+        Ok(_) => info!("Table renamed"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_truncate_table(server: &mut Server, message: &Message) {
     info!("Received TRUNCATE TABLE");
+
+    let stm = match TruncateTableStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for TRUNCATE TABLE: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().truncate_table("", &stm.table_name);
+
+    let body = b"TABLE TRUNCATED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_TRUNCATE_TABLE, body).await {
+        Ok(_) => info!("Table truncated"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_show_tables(server: &mut Server, message: &Message) {
     info!("Received SHOW TABLES");
+
+    let tables = server.storage().lock().unwrap().show_tables("");
+
+    let tables_str = tables.join("\n");
+    let body = tables_str.as_bytes();
+    match server.send(message.header.message_id, MESSAGE_TYPE_SHOW_TABLES, body).await {
+        Ok(_) => info!("Tables sent"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_describe_table(server: &mut Server, message: &Message) {
     info!("Received DESCRIBE TABLE");
+
+    let stm = match DescribeTableStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for DESCRIBE TABLE: {}", e);
+            return;
+        }
+    };
+
+    let columns = server.storage().lock().unwrap().describe_table("", &stm.table_name);
+
+    let columns_str: String = columns.iter().map(|col| format!("{:?}", col)).collect::<Vec<String>>().join("\n");
+    let body = columns_str.as_bytes();
+    match server.send(message.header.message_id, MESSAGE_TYPE_DESCRIBE_TABLE, body).await {
+        Ok(_) => info!("Table schema sent"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 // =====================

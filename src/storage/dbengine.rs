@@ -87,15 +87,21 @@ impl DBEngine {
         // To be implemented later
     }
 
-    /// Describes the schema of a table
-    pub fn describe_table(
-        &self,
-        database_name: &str,
-        table_name: &str
-    ) -> Option<Vec<ColumnDefinition>> {
+    pub fn truncate_table(&mut self, database_name: &str, table_name: &str) {
+        println!("truncate_table: {} in {}", table_name, database_name);
+        // To be implemented later
+    }
+
+    pub fn show_tables(&self, database_name: &str) -> Vec<String> {
+        println!("show_tables in {}", database_name);
+        // To be implemented later
+        return Vec::new();
+    }
+
+    pub fn describe_table(&self, database_name: &str, table_name: &str) -> Vec<ColumnDefinition> {
         println!("describe_table: {} in {}", table_name, database_name);
         // To be implemented later
-        None
+        return Vec::new();
     }
 
     // =====================

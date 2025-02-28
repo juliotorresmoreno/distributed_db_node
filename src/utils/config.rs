@@ -10,21 +10,8 @@ pub struct Master {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub network: NetworkConfig,
-    pub api: ApiConfig,
     pub storage: StorageConfig,
     pub master: Master,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct NetworkConfig {
-    pub port: u16,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ApiConfig {
-    pub port: u16,
-    pub enabled: bool,
 }
 
 #[derive(Debug, Deserialize)]

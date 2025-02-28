@@ -1,12 +1,5 @@
-[network]
-port = 4000
-
 [master]
 port = 4040
-
-[api]
-port = 4041
-enabled = true
 
 [storage]
 path = "./data"

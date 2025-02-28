@@ -10,6 +10,7 @@ pub struct DescribeTableStatement {
 }
 
 impl DescribeTableStatement {
+    #[allow(dead_code)]
     pub fn new(table_name: &str) -> Self {
         Self {
             table_name: table_name.to_string(),

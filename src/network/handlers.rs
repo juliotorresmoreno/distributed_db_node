@@ -2,15 +2,22 @@ use super::transport::*;
 use crate::{
     network::server::Server,
     protocol::{
-        management::{
-            createDatabase::CreateDatabaseStatement,
-            dropDatabase::DropDatabaseStatement,
-            useDatabase::UseDatabaseStatement,
-        },
-        operations::{
-            alterTable::AlterTableStatement, createTable::CreateTableStatement, describeTable::DescribeTableStatement, dropTable::DropTableStatement, renameTable::RenameTableStatement, truncateTable::TruncateTableStatement
-        },
-        statement::Statement,
+        data::insert::InsertStatement, index::{
+            create_index::CreateIndexStatement,
+            drop_index::DropIndexStatement,
+            show_indexes::ShowIndexesStatement,
+        }, management::{
+            create_database::CreateDatabaseStatement,
+            drop_database::DropDatabaseStatement,
+            use_database::UseDatabaseStatement,
+        }, operations::{
+            alter_table::AlterTableStatement,
+            create_table::CreateTableStatement,
+            describe_table::DescribeTableStatement,
+            drop_table::DropTableStatement,
+            rename_table::RenameTableStatement,
+            truncate_table::TruncateTableStatement,
+        }, statement::Statement
     },
 };
 use log::{ info, error };
@@ -222,7 +229,11 @@ pub async fn handle_describe_table(server: &mut Server, message: &Message) {
 
     let columns = server.storage().lock().unwrap().describe_table("", &stm.table_name);
 
-    let columns_str: String = columns.iter().map(|col| format!("{:?}", col)).collect::<Vec<String>>().join("\n");
+    let columns_str: String = columns
+        .iter()
+        .map(|col| format!("{:?}", col))
+        .collect::<Vec<String>>()
+        .join("\n");
     let body = columns_str.as_bytes();
     match server.send(message.header.message_id, MESSAGE_TYPE_DESCRIBE_TABLE, body).await {
         Ok(_) => info!("Table schema sent"),
@@ -236,14 +247,68 @@ pub async fn handle_describe_table(server: &mut Server, message: &Message) {
 
 pub async fn handle_create_index(server: &mut Server, message: &Message) {
     info!("Received CREATE INDEX");
+
+    let stm = match CreateIndexStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for CREATE INDEX: {}", e);
+            return;
+        }
+    };
+
+    server
+        .storage()
+        .lock()
+        .unwrap()
+        .create_index("", &stm.index_name, &stm.table_name, &stm.columns, stm.unique);
+
+    let body = b"INDEX CREATED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_CREATE_INDEX, body).await {
+        Ok(_) => info!("Index created"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_drop_index(server: &mut Server, message: &Message) {
     info!("Received DROP INDEX");
+
+    let stm = match DropIndexStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for DROP INDEX: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().drop_index("", &stm.table_name, &stm.index_name);
+
+    let body = b"INDEX DROPPED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_DROP_INDEX, body).await {
+        Ok(_) => info!("Index dropped"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_show_indexes(server: &mut Server, message: &Message) {
     info!("Received SHOW INDEXES");
+
+    let stm = match ShowIndexesStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for SHOW INDEXES: {}", e);
+            return;
+        }
+    };
+
+    let indexes = server.storage().lock().unwrap().show_indexes("", &stm.table_name);
+
+    let indexes_str = indexes.join("\n");
+    let body = indexes_str.as_bytes();
+
+    match server.send(message.header.message_id, MESSAGE_TYPE_SHOW_INDEXES, body).await {
+        Ok(_) => info!("Indexes sent"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 // =====================
@@ -252,6 +317,22 @@ pub async fn handle_show_indexes(server: &mut Server, message: &Message) {
 
 pub async fn handle_insert(server: &mut Server, message: &Message) {
     info!("Received INSERT");
+
+    let stm = match InsertStatement::from_bytes(&message.body) {
+        Ok(statement) => statement,
+        Err(e) => {
+            error!("Failed to parse BSON for INSERT: {}", e);
+            return;
+        }
+    };
+
+    server.storage().lock().unwrap().insert("", &stm.table_name, &stm.values);
+
+    let body = b"ROW INSERTED";
+    match server.send(message.header.message_id, MESSAGE_TYPE_INSERT, body).await {
+        Ok(_) => info!("Row inserted"),
+        Err(e) => error!("Failed to send response: {}", e),
+    }
 }
 
 pub async fn handle_select(server: &mut Server, message: &Message) {

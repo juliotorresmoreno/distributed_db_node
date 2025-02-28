@@ -1,25 +1,38 @@
-use serde::{Serialize, Deserialize};
-use rmp_serde::{to_vec_named, from_slice};
+use serde::{ Serialize, Deserialize };
+use rmp_serde::{ to_vec_named, from_slice };
 use std::error::Error;
-use crate::protocol::statement::{Statement, MessageType};
+use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TruncateTableStatement {
+pub struct CreateIndexStatement {
+    #[serde(rename = "index_name")]
+    pub index_name: String,
+
     #[serde(rename = "table_name")]
     pub table_name: String,
+
+    #[serde(rename = "columns")]
+    pub columns: Vec<String>,
+
+    #[serde(rename = "unique")]
+    pub unique: bool,
 }
 
-impl TruncateTableStatement {
-    pub fn new(table_name: &str) -> Self {
+impl CreateIndexStatement {
+    #[allow(dead_code)]
+    pub fn new(index_name: &str, table_name: &str, columns: Vec<String>, unique: bool) -> Self {
         Self {
+            index_name: index_name.to_string(),
             table_name: table_name.to_string(),
+            columns,
+            unique,
         }
     }
 }
 
-impl Statement for TruncateTableStatement {
+impl Statement for CreateIndexStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::TruncateTable
+        MessageType::CreateIndex
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -47,7 +60,7 @@ impl Statement for TruncateTableStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: TruncateTableStatement = from_slice(msgpack_data)?;
+        let stmt: CreateIndexStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

@@ -4,26 +4,23 @@ use std::error::Error;
 use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RenameTableStatement {
-    #[serde(rename = "old_table_name")]
-    pub old_table_name: String,
-
-    #[serde(rename = "new_table_name")]
-    pub new_table_name: String,
+pub struct ShowIndexesStatement {
+    #[serde(rename = "table_name")]
+    pub table_name: String,
 }
 
-impl RenameTableStatement {
-    pub fn new(old_table_name: &str, new_table_name: &str) -> Self {
+impl ShowIndexesStatement {
+    #[allow(dead_code)]
+    pub fn new(table_name: &str) -> Self {
         Self {
-            old_table_name: old_table_name.to_string(),
-            new_table_name: new_table_name.to_string(),
+            table_name: table_name.to_string(),
         }
     }
 }
 
-impl Statement for RenameTableStatement {
+impl Statement for ShowIndexesStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::RenameTable
+        MessageType::ShowIndexes
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -51,7 +48,7 @@ impl Statement for RenameTableStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: RenameTableStatement = from_slice(msgpack_data)?;
+        let stmt: ShowIndexesStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

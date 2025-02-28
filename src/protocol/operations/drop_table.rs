@@ -4,22 +4,23 @@ use std::error::Error;
 use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateDatabaseStatement {
-    #[serde(rename = "database_name")]
-    pub database_name: String,
+pub struct DropTableStatement {
+    #[serde(rename = "table_name")]
+    pub table_name: String,
 }
 
-impl CreateDatabaseStatement {
-    pub fn new(database_name: &str) -> Self {
+impl DropTableStatement {
+    #[allow(dead_code)]
+    pub fn new(table_name: &str) -> Self {
         Self {
-            database_name: database_name.to_string(),
+            table_name: table_name.to_string(),
         }
     }
 }
 
-impl Statement for CreateDatabaseStatement {
+impl Statement for DropTableStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::CreateDatabase
+        MessageType::DropTable
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -47,7 +48,7 @@ impl Statement for CreateDatabaseStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: CreateDatabaseStatement = from_slice(msgpack_data)?;
+        let stmt: DropTableStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

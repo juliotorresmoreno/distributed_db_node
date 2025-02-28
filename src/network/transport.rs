@@ -44,6 +44,7 @@ pub const MESSAGE_TYPE_WELCOME: MessageType = 93;
 pub const MESSAGE_TYPE_UNKNOWN_COMMAND: MessageType = 255;
 
 // Mapping from MessageType to their String representations
+#[allow(dead_code)]
 pub fn get_message_type_name(message_type: MessageType) -> &'static str {
     match message_type {
         // Database Management

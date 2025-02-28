@@ -1,15 +1,16 @@
-use serde::{ Serialize, Deserialize };
-use rmp_serde::{ to_vec_named, from_slice };
+use serde::{Serialize, Deserialize};
+use rmp_serde::{to_vec_named, from_slice};
 use std::error::Error;
-use crate::protocol::statement::{ Statement, MessageType };
+use crate::protocol::statement::{Statement, MessageType};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct UseDatabaseStatement {
+pub struct ShowTablesStatement {
     #[serde(rename = "database_name")]
     pub database_name: String,
 }
 
-impl UseDatabaseStatement {
+impl ShowTablesStatement {
+    #[allow(dead_code)]
     pub fn new(database_name: &str) -> Self {
         Self {
             database_name: database_name.to_string(),
@@ -17,9 +18,9 @@ impl UseDatabaseStatement {
     }
 }
 
-impl Statement for UseDatabaseStatement {
+impl Statement for ShowTablesStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::UseDatabase
+        MessageType::ShowTables
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -47,7 +48,7 @@ impl Statement for UseDatabaseStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: UseDatabaseStatement = from_slice(msgpack_data)?;
+        let stmt: ShowTablesStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

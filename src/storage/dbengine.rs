@@ -105,11 +105,32 @@ impl DBEngine {
     }
 
     // =====================
+    // Index Operations
+    // =====================
+    pub fn create_index(&mut self, database_name: &str, table_name: &str, index_name: &str, columns: &Vec<String>, unique: bool) {
+        println!("create_index: {} in {} on {}", index_name, database_name, table_name);
+        println!("Columns: {:?}", columns);
+        println!("Unique: {}", unique);
+        // To be implemented later
+    }
+
+    pub fn drop_index(&mut self, database_name: &str, table_name: &str, index_name: &str) {
+        println!("drop_index: {} in {} from {}", index_name, database_name, table_name);
+        // To be implemented later
+    }
+
+    pub fn show_indexes(&self, database_name: &str, table_name: &str) -> Vec<String> {
+        println!("show_indexes in {} from {}", database_name, table_name);
+        // To be implemented later
+        return Vec::new();
+    }
+
+    // =====================
     // Data Operations
     // =====================
 
     /// Inserts a new row into a table
-    pub fn insert(&mut self, database_name: &str, table_name: &str, row: HashMap<String, String>) {
+    pub fn insert(&mut self, database_name: &str, table_name: &str, row: &Vec<HashMap<String, String>>) {
         println!("insert into {} in {}", table_name, database_name);
         // To be implemented later
     }

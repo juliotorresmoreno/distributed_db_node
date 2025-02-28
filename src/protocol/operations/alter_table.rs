@@ -1,25 +1,38 @@
 use serde::{Serialize, Deserialize};
 use rmp_serde::{to_vec_named, from_slice};
 use std::error::Error;
-use crate::protocol::statement::{Statement, MessageType};
+use crate::protocol::statement::{Statement, MessageType, ColumnDefinition};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ShowTablesStatement {
-    #[serde(rename = "database_name")]
-    pub database_name: String,
+pub enum AlterOperation {
+    AddColumn(ColumnDefinition),
+    DropColumn(String),
+    RenameColumn { old_name: String, new_name: String },
+    ModifyColumn(ColumnDefinition),
 }
 
-impl ShowTablesStatement {
-    pub fn new(database_name: &str) -> Self {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AlterTableStatement {
+    #[serde(rename = "table_name")]
+    pub table_name: String,
+
+    #[serde(rename = "operations")]
+    pub operations: Vec<AlterOperation>,
+}
+
+impl AlterTableStatement {
+    #[allow(dead_code)]
+    pub fn new(table_name: &str, operations: Vec<AlterOperation>) -> Self {
         Self {
-            database_name: database_name.to_string(),
+            table_name: table_name.to_string(),
+            operations,
         }
     }
 }
 
-impl Statement for ShowTablesStatement {
+impl Statement for AlterTableStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::ShowTables
+        MessageType::AlterTable
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -47,7 +60,7 @@ impl Statement for ShowTablesStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: ShowTablesStatement = from_slice(msgpack_data)?;
+        let stmt: AlterTableStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

@@ -4,22 +4,27 @@ use std::error::Error;
 use crate::protocol::statement::{ Statement, MessageType };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct DropTableStatement {
+pub struct DropIndexStatement {
+    #[serde(rename = "index_name")]
+    pub index_name: String,
+
     #[serde(rename = "table_name")]
     pub table_name: String,
 }
 
-impl DropTableStatement {
-    pub fn new(table_name: &str) -> Self {
+impl DropIndexStatement {
+    #[allow(dead_code)]
+    pub fn new(index_name: &str, table_name: &str) -> Self {
         Self {
+            index_name: index_name.to_string(),
             table_name: table_name.to_string(),
         }
     }
 }
 
-impl Statement for DropTableStatement {
+impl Statement for DropIndexStatement {
     fn protocol(&self) -> MessageType {
-        MessageType::DropTable
+        MessageType::DropIndex
     }
 
     /// Serializes the statement into length-prefixed MessagePack bytes
@@ -47,7 +52,7 @@ impl Statement for DropTableStatement {
         let msgpack_data = &bytes[4..];
 
         // Deserialize the MessagePack bytes
-        let stmt: DropTableStatement = from_slice(msgpack_data)?;
+        let stmt: DropIndexStatement = from_slice(msgpack_data)?;
         Ok(stmt)
     }
 }

@@ -1,4 +1,26 @@
 use std::error::Error;
+use serde::{ Serialize, Deserialize };
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ColumnDefinition {
+    #[serde(rename = "name")]
+    pub name: String,
+
+    #[serde(rename = "type")]
+    pub r#type: String,
+
+    #[serde(rename = "length")]
+    pub length: i32,
+
+    #[serde(rename = "primary_key")]
+    pub primary_key: bool,
+
+    #[serde(rename = "index")]
+    pub index: bool,
+
+    #[serde(rename = "default_value")]
+    pub default_value: String,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum MessageType {

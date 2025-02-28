@@ -1,5 +1,8 @@
 use super::transport::*;
-use crate::{network::manager::Manager, protocol::{createDatabase::CreateDatabaseStatement, statement::Statement}};
+use crate::{
+    network::manager::Manager,
+    protocol::{ createDatabase::CreateDatabaseStatement, statement::Statement },
+};
 use log::{ info, error };
 use crate::protocol::createTable::CreateTableStatement;
 
@@ -50,7 +53,7 @@ pub async fn handle_create_table(manager: &mut Manager, message: &Message) {
         }
     };
 
-    manager.storage().lock().unwrap().create_table(&stm.table_name, &stm.columns, &stm.storage);
+    manager.storage().lock().unwrap().create_table("", &stm.table_name, &stm.columns, &stm.storage);
 
     let body = b"TABLE CREATED";
     match manager.send(message.header.message_id, MESSAGE_TYPE_CREATE_TABLE, body).await {

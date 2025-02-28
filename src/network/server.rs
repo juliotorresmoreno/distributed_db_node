@@ -1,17 +1,16 @@
 use tokio::net::{ TcpListener, TcpStream };
-use tokio::io::{ AsyncReadExt, AsyncWriteExt };
 use std::sync::{ Arc, Mutex };
-use crate::storage::kv_store::KVStore;
+use crate::storage::dbengine::DBEngine;
 use std::fmt;
 use log::{ info, error };
 
 pub struct Server {
     port: u16,
-    storage: Arc<Mutex<KVStore>>,
+    storage: Arc<Mutex<DBEngine>>,
 }
 
 impl Server {
-    pub fn new(port: u16, storage: Arc<Mutex<KVStore>>) -> Self {
+    pub fn new(port: u16, storage: Arc<Mutex<DBEngine>>) -> Self {
         Self { port, storage }
     }
 
@@ -36,40 +35,8 @@ impl Server {
 
 async fn handle_connection(
     mut socket: TcpStream,
-    storage: Arc<Mutex<KVStore>>
+    storage: Arc<Mutex<DBEngine>>
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut buffer = [0u8; 1024];
-    let bytes_read = socket.read(&mut buffer).await?;
-
-    if bytes_read == 0 {
-        return Ok(());
-    }
-
-    let request = String::from_utf8_lossy(&buffer[..bytes_read]);
-    info!("Request received: {}", request);
-
-    let response = if request.starts_with("GET") {
-        let key = request.trim_start_matches("GET ").trim();
-        let value = storage
-            .lock()
-            .unwrap()
-            .get(key)
-            .unwrap_or_else(|| "Key not found".to_string());
-        format!("VALUE: {}\n", value)
-    } else if request.starts_with("SET") {
-        let parts: Vec<&str> = request.trim_start_matches("SET ").splitn(2, ' ').collect();
-        if parts.len() == 2 {
-            storage.lock().unwrap().set(parts[0].to_string(), parts[1].to_string());
-            "OK\n".to_string()
-        } else {
-            "Invalid SET command\n".to_string()
-        }
-    } else {
-        "Invalid command\n".to_string()
-    };
-
-    socket.write_all(response.as_bytes()).await?;
-    socket.flush().await?;
 
     Ok(())
 }

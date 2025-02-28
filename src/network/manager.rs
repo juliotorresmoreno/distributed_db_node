@@ -4,7 +4,7 @@ use std::io;
 use tokio::time::{ sleep, Duration };
 use async_recursion::async_recursion;
 use std::sync::{ Arc, Mutex };
-use crate::storage::kv_store::KVStore;
+use crate::storage::dbengine::DBEngine;
 
 use super::transport::*;
 use super::handlers::*;
@@ -13,11 +13,11 @@ use log::{ info, error };
 pub struct Manager {
     address: String,
     stream: Option<TcpStream>,
-    storage: Arc<Mutex<KVStore>>,
+    storage: Arc<Mutex<DBEngine>>,
 }
 
 impl Manager {
-    pub fn new(address: &str, storage: Arc<Mutex<KVStore>>) -> Self {
+    pub fn new(address: &str, storage: Arc<Mutex<DBEngine>>) -> Self {
         return Self {
             address: address.to_string(),
             stream: None,
@@ -25,7 +25,7 @@ impl Manager {
         };
     }
 
-    pub fn storage(&self) -> Arc<Mutex<KVStore>> {
+    pub fn storage(&self) -> Arc<Mutex<DBEngine>> {
         return Arc::clone(&self.storage);
     }
 

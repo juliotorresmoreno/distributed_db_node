@@ -1,28 +1,8 @@
 use serde::{ Serialize, Deserialize };
 use rmp_serde::{ to_vec_named, from_slice };
 use std::error::Error;
-use super::statement::{ Statement, MessageType };
+use super::statement::{ Statement, MessageType, ColumnDefinition };
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ColumnDefinition {
-    #[serde(rename = "name")]
-    pub name: String,
-
-    #[serde(rename = "type")]
-    pub r#type: String,
-
-    #[serde(rename = "length")]
-    pub length: i32,
-
-    #[serde(rename = "primary_key")]
-    pub primary_key: bool,
-
-    #[serde(rename = "index")]
-    pub index: bool,
-
-    #[serde(rename = "default_value")]
-    pub default_value: String,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTableStatement {

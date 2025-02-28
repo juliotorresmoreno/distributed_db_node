@@ -18,7 +18,7 @@ async fn main() {
     init_logger();
 
     let config = Config::load("config.toml").expect("Failed to load config");
-    let storage = storage::kv_store::KVStore::new();
+    let storage = storage::dbengine::DBEngine::new();
     let server = network::server::Server::new(config.network.port, storage.clone());
 
     let mut manager = Manager::new("localhost:4040", storage.clone());

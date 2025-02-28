@@ -1,14 +1,19 @@
-
 use serde::Deserialize;
 use std::fs;
 use toml;
 use std::path::Path;
 
 #[derive(Debug, Deserialize)]
+pub struct Master {
+    pub addr: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub network: NetworkConfig,
     pub api: ApiConfig,
     pub storage: StorageConfig,
+    pub master: Master,
 }
 
 #[derive(Debug, Deserialize)]

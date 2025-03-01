@@ -66,16 +66,23 @@ pub enum MessageType {
     BeginTransaction,
     Commit,
     Rollback,
+    #[allow(dead_code)]
     Savepoint,
+    #[allow(dead_code)]
     ReleaseSavepoint,
 
     // =====================
     // Utility Commands
     // =====================
+    #[allow(dead_code)]
     Ping,
+    #[allow(dead_code)]
     Pong,
+    #[allow(dead_code)]
     Greeting,
+    #[allow(dead_code)]
     Welcome,
+    #[allow(dead_code)]
     UnknownCommand,
 }
 

@@ -1,5 +1,8 @@
-[master]
-port = 4040
+
+[management]
+addr = "http://127.0.0.1:8000/api"
+node_id = "slave-node-1"
+cluster_token = "1234567890"
 
 [storage]
 path = "./data"

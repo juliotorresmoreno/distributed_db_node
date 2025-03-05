@@ -1,17 +1,19 @@
 use serde::Deserialize;
 use std::fs;
-use toml;
 use std::path::Path;
+use toml;
 
 #[derive(Debug, Deserialize)]
-pub struct Master {
-    pub addr: String,
+pub struct Management {
+    pub addr: String,       
+    pub node_id: String,      
+    pub cluster_token: String, 
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub storage: StorageConfig,
-    pub master: Master,
+    pub management: Management, 
 }
 
 #[derive(Debug, Deserialize)]

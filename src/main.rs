@@ -4,6 +4,7 @@ mod utils;
 mod protocol;
 mod managment;
 
+use network::handlers;
 use utils::logger::init_logger;
 use utils::config::Config;
 use network::server::Server;
@@ -22,24 +23,35 @@ async fn main() {
     init_logger();
 
     let config = Config::load("config.toml").expect("Failed to load config");
-    let storage = DBEngine::new();
+
+    let event_handler = Arc::new(|nodes: Vec<String>| {
+        println!("Nodes: {:?}", nodes);
+        let storage = DBEngine::new();
+
+        for node in nodes {
+            let storage_clone = storage.clone();
+            tokio::spawn(async move {
+                let mut server: Server = Server::new(storage_clone);
+                server.connect(&node).await;
+                if let Err(e) = server.listen().await {
+                    eprintln!("Failed to start listener for {}: {}", node, e);
+                }
+            });
+        }
+    });
 
     let client = Client::new(
         config.management.node_id.clone(),
         config.management.cluster_token.clone(),
-        config.management.addr.clone()
-    );
+        config.management.addr.clone(),
+        config.management.url.clone()
+    ).with_event_handler(event_handler);
 
-    let nodes = client.get_master_nodes().await.expect("Failed to get master nodes");
     let managment_node = tokio::spawn(async move {
         client.connect_to_management().await;
     });
 
     time::sleep(time::Duration::from_secs(5)).await;
-
-    
-    println!("Master nodes: {:?}", nodes);
-    println!("Parsed config: {:?}", config);
 
     // let mut server = Server::new(storage.clone());
     // server.connect(&config.master.addr).await;

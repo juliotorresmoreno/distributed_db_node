@@ -5,15 +5,16 @@ use toml;
 
 #[derive(Debug, Deserialize)]
 pub struct Management {
-    pub addr: String,       
-    pub node_id: String,      
-    pub cluster_token: String, 
+    pub url: String,
+    pub addr: String,
+    pub node_id: String,
+    pub cluster_token: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub storage: StorageConfig,
-    pub management: Management, 
+    pub management: Management,
 }
 
 #[derive(Debug, Deserialize)]

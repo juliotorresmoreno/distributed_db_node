@@ -1,6 +1,6 @@
-use std::time::{Duration, SystemTime};
+use std::time::{ Duration, SystemTime };
 use std::sync::Arc;
-use futures::{SinkExt, StreamExt};
+use futures::{ SinkExt, StreamExt };
 use tokio::net::TcpStream;
 use tokio_tungstenite::{
     connect_async,
@@ -8,24 +8,16 @@ use tokio_tungstenite::{
     MaybeTlsStream,
     WebSocketStream,
 };
-use url::Url;
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio::time::sleep;
-use hmac::{Hmac, Mac};
+use hmac::{ Hmac, Mac };
 use sha2::Sha256;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::Value;
-use reqwest;
 use chrono;
 
 type HmacSha256 = Hmac<Sha256>;
 type EventHandler = Arc<dyn Fn(Vec<String>) + Send + Sync>;
-
-#[derive(Debug, Deserialize)]
-struct NodesResponse {
-    connected_masters: Vec<String>,
-    connected_slaves: Vec<String>,
-}
 
 #[derive(Debug, Serialize)]
 struct RegisterMessage {
@@ -44,12 +36,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(
-        node_id: String,
-        cluster_token: String,
-        admin_addr: String,
-        url: String,
-    ) -> Self {
+    pub fn new(node_id: String, cluster_token: String, admin_addr: String, url: String) -> Self {
         Self {
             node_id,
             cluster_token,
@@ -71,8 +58,9 @@ impl Client {
     }
 
     fn generate_token(&self, date: &str) -> String {
-        let mut mac = HmacSha256::new_from_slice(self.cluster_token.as_bytes())
-            .expect("HMAC can take key of any size");
+        let mut mac = HmacSha256::new_from_slice(self.cluster_token.as_bytes()).expect(
+            "HMAC can take key of any size"
+        );
         let data = format!("{}|{}", self.node_id, date);
         mac.update(data.as_bytes());
         hex::encode(mac.finalize().into_bytes())
@@ -137,10 +125,12 @@ impl Client {
                         if let Some(action) = event.get("action").and_then(|a| a.as_str()) {
                             match action {
                                 "master_list" => {
-                                    if let Some(masters) = event.get("payload")
-                                        .and_then(|p| p.get("masters"))
-                                        .and_then(|m| m.as_array()) {
-
+                                    if
+                                        let Some(masters) = event
+                                            .get("payload")
+                                            .and_then(|p| p.get("masters"))
+                                            .and_then(|m| m.as_array())
+                                    {
                                         let master_urls: Vec<String> = masters
                                             .iter()
                                             .filter_map(|m| m.as_str().map(|s| s.to_string()))
@@ -165,11 +155,5 @@ impl Client {
                 _ => {}
             }
         }
-    }
-
-    pub async fn get_master_nodes(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-        let url = format!("{}/managment/nodes", self.admin_addr);
-        let response: NodesResponse = reqwest::get(&url).await?.json().await?;
-        Ok(response.connected_masters)
     }
 }

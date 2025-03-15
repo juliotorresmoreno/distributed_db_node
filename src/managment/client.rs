@@ -1,7 +1,8 @@
-use std::time::{ Duration, SystemTime };
 use std::sync::Arc;
+use std::time::{ Duration, SystemTime };
 use futures::{ SinkExt, StreamExt };
 use tokio::net::TcpStream;
+use tokio::time::sleep;
 use tokio_tungstenite::{
     connect_async,
     tungstenite::protocol::Message,
@@ -9,12 +10,12 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 use tokio_tungstenite::tungstenite::client::IntoClientRequest;
-use tokio::time::sleep;
 use hmac::{ Hmac, Mac };
 use sha2::Sha256;
 use serde::Serialize;
 use serde_json::Value;
 use chrono;
+use base64::{ self, Engine, engine::general_purpose::STANDARD };
 
 type HmacSha256 = Hmac<Sha256>;
 type EventHandler = Arc<dyn Fn(Vec<String>) + Send + Sync>;
@@ -23,7 +24,7 @@ type EventHandler = Arc<dyn Fn(Vec<String>) + Send + Sync>;
 struct RegisterMessage {
     action: String,
     node_id: String,
-    payload: Value,
+    payload: String, // Ahora el payload es una string en Base64
 }
 
 #[derive(Clone)]
@@ -48,7 +49,7 @@ impl Client {
 
     pub fn with_event_handler(mut self, handler: EventHandler) -> Self {
         self.event_handler = Some(handler);
-        return self;
+        self
     }
 
     fn get_current_date() -> String {
@@ -106,15 +107,26 @@ impl Client {
     }
 
     async fn register(&self, ws_stream: &mut WebSocketStream<MaybeTlsStream<TcpStream>>) {
-        let payload = serde_json::json!({ "url": self.url });
-        let register_msg = RegisterMessage {
-            action: "register".to_string(),
-            node_id: self.node_id.clone(),
-            payload,
-        };
+        let payload_json = serde_json::json!({ "url": self.url });
 
-        let message_text = serde_json::to_string(&register_msg).unwrap();
-        ws_stream.send(Message::Text(message_text.into())).await.unwrap();
+        // Serializar a JSON y luego a Base64
+        match serde_json::to_vec(&payload_json) {
+            Ok(payload_bytes) => {
+                let payload_base64 = STANDARD.encode(payload_bytes);
+
+                let register_msg = RegisterMessage {
+                    action: "register".to_string(),
+                    node_id: self.node_id.clone(),
+                    payload: payload_base64, // Enviamos en Base64
+                };
+
+                let message_text = serde_json::to_string(&register_msg).unwrap();
+                ws_stream.send(Message::Text(message_text.into())).await.unwrap();
+            }
+            Err(e) => {
+                eprintln!("Failed to serialize register message: {}", e);
+            }
+        }
     }
 
     async fn listen(&self, mut ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>) {

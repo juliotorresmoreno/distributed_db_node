@@ -27,6 +27,7 @@ dependencies = [
  "regex",
  "reqwest",
  "rmp-serde",
+ "scopeguard",
  "serde",
  "serde_json",
  "sha2",

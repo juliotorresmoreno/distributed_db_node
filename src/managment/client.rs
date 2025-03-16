@@ -1,14 +1,11 @@
 use std::collections::BinaryHeap;
 use std::sync::{ Arc, Mutex };
 use std::time::Duration;
-use futures::FutureExt;
-use tokio::net::TcpStream;
-use tokio::sync::oneshot;
 use log::{ info, warn };
-use crate::network::{ ZenithConnection, dial_timeout }; // Assume your ZenithConnection is in network
+use crate::network::{ ZenithConnection, dial_timeout };
 use crate::protocol::{ self, MessageType };
-use crate::transport::{ Message };
-use crate::statement::{ self, LoginStatement };
+use crate::transport::Message;
+use crate::statement::LoginStatement;
 
 const RECONNECT_INTERVAL: Duration = Duration::from_secs(3);
 
@@ -143,7 +140,7 @@ impl MessageClient {
             self.tags.clone()
         )?;
         let login_message = Message::new(protocol::MessageType::Login, &stmt);
-        let response = match conn.send(login_message).await {
+        let response = match conn.send(&login_message).await {
             Ok(response) => response,
             Err(e) => {
                 return Err(e);

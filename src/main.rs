@@ -5,10 +5,11 @@ mod protocol;
 mod statement;
 mod managment;
 mod transport;
+mod example;
+
+use example::start_server;
 
 #[tokio::main]
 async fn main() {
-    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
-
-    println!("Starting server...");
+    start_server().await;
 }

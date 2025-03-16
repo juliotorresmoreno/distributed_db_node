@@ -47,7 +47,7 @@ impl ZenithConnection {
             id,
         };
     }
-    pub async fn send(&mut self, message: Message) -> Result<Message, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn send(&mut self, message: &Message) -> Result<Message, Box<dyn std::error::Error + Send + Sync>> {
         let message_id = message.header.message_id_string();
         let (tx, rx) = oneshot::channel();
     

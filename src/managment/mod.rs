@@ -1,3 +1,2 @@
-
 pub mod client;
-pub use client::MessageClient;
+pub use client::{ MessageClient, MessageConfig };

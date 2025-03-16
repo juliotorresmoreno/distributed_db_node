@@ -38,10 +38,13 @@ regex = "1.11.1"  # Soporte para expresiones regulares
 subtle = "2.6.1" # Soporte para operaciones criptográficas
 byteorder = "1.5" # Soporte para orden de bytes
 log4rs = "1.0" # Logger
-
+scopeguard = "1.1" # Soporte para guardias de alcance
 
 [dev-dependencies]
 assertables = "9.5" # Para pruebas
 
 [build-dependencies]
 tonic-build = "0.12.3"
+
+[profile.dev]
+lto = false

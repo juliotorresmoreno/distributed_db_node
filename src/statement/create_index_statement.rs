@@ -1,8 +1,9 @@
-use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors};
-use rmp_serde::{encode, decode};
+use serde::{ Deserialize, Serialize };
+use validator::{ Validate, ValidationErrors };
+use rmp_serde::{ encode, decode };
 use crate::statement::validate::validate_alphanumunderscore;
 use crate::protocol::MessageType;
+use crate::statement::Statement;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct CreateIndexStatement {
@@ -20,25 +21,41 @@ pub struct CreateIndexStatement {
 }
 
 impl CreateIndexStatement {
-    pub fn new(index_name: String, table_name: String, columns: Vec<String>) -> Result<Self, ValidationErrors> {
+    pub fn new(
+        index_name: String,
+        table_name: String,
+        columns: Vec<String>
+    ) -> Result<Self, ValidationErrors> {
         let stmt = CreateIndexStatement { index_name, table_name, columns };
         stmt.validate()?;
         Ok(stmt)
     }
+}
 
-    pub fn protocol(&self) -> MessageType {
+impl Statement for CreateIndexStatement {
+    fn clone_box(&self) -> Box<dyn Statement> {
+        Box::new(self.clone())
+    }
+
+    fn protocol(&self) -> MessageType {
         MessageType::CreateIndex
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
         encode::to_vec(self)
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Self, decode::Error> {
-        decode::from_slice(data)
+    fn from_bytes(data: &[u8]) -> Result<Box<dyn Statement>, decode::Error> {
+        let stmt: CreateIndexStatement = decode::from_slice(data)?;
+        Ok(Box::new(stmt))
     }
 
-    pub fn to_string(&self) -> String {
-        format!("CreateIndexStatement{{IndexName: {}, TableName: {}, Columns: {:?}}}", self.index_name, self.table_name, self.columns)
+    fn to_string(&self) -> String {
+        format!(
+            "CreateIndexStatement{{IndexName: {}, TableName: {}, Columns: {:?}}}",
+            self.index_name,
+            self.table_name,
+            self.columns
+        )
     }
 }

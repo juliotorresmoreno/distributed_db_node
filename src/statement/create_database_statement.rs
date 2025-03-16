@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors};
-use rmp_serde::{encode, decode};
-use crate::statement::validate::validate_alphanumunderscore;
+use serde::{ Deserialize, Serialize };
+use validator::{ Validate, ValidationErrors };
+use rmp_serde::{ encode, decode };
+use crate::statement::{ Statement, validate::validate_alphanumunderscore };
 use crate::protocol::MessageType;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -17,20 +17,27 @@ impl CreateDatabaseStatement {
         stmt.validate()?;
         Ok(stmt)
     }
+}
 
-    pub fn protocol(&self) -> MessageType {
+impl Statement for CreateDatabaseStatement {
+    fn clone_box(&self) -> Box<dyn Statement> {
+        Box::new(self.clone())
+    }
+
+    fn protocol(&self) -> MessageType {
         MessageType::CreateDatabase
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
         encode::to_vec(self)
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Self, decode::Error> {
-        decode::from_slice(data)
+    fn from_bytes(data: &[u8]) -> Result<Box<dyn Statement>, decode::Error> {
+        let stmt: CreateDatabaseStatement = decode::from_slice(data)?;
+        Ok(Box::new(stmt))
     }
 
-    pub fn to_string(&self) -> String {
+    fn to_string(&self) -> String {
         format!("CreateDatabaseStatement{{DatabaseName: {}}}", self.database_name)
     }
 }

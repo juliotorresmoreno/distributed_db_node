@@ -78,3 +78,5 @@ pub use update_statement::UpdateStatement;
 
 pub mod upsert_statement;
 pub use upsert_statement::UpsertStatement;
+
+pub mod error;

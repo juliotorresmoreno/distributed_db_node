@@ -5,6 +5,9 @@ use crate::protocol::MessageType;
 use crate::utils;
 use regex::Regex;
 use subtle::ConstantTimeEq;
+use chrono::Utc;
+
+use super::Statement;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct LoginStatement {
@@ -28,7 +31,7 @@ pub struct LoginStatement {
 }
 
 impl LoginStatement {
-    pub fn new(
+    fn new(
         token: &str,
         node_id: String,
         node_name: String,
@@ -39,19 +42,22 @@ impl LoginStatement {
             return Err(ValidationErrors::new());
         }
 
-        let node_id_re = Regex::new(r"^[a-zA-Z0-9_-]+$").unwrap();
-        let node_name_re = Regex::new(r"^[a-zA-Z0-9_]+$").unwrap();
-        if node_id.is_empty() || !node_id_re.is_match(&node_id) {
-            return Err(ValidationErrors::new());
-        }
-        if node_name.is_empty() || !node_name_re.is_match(&node_name) {
-            return Err(ValidationErrors::new());
-        }
-        if tags.is_empty() || tags.iter().any(|t| (t.is_empty() || !node_id_re.is_match(t))) {
+        let re_node_id = Regex::new(r"^[a-zA-Z0-9_-]+$").unwrap();
+        let re_node_name = Regex::new(r"^[a-zA-Z0-9_]+$").unwrap();
+
+        if node_id.is_empty() || !re_node_id.is_match(&node_id) {
             return Err(ValidationErrors::new());
         }
 
-        let timestamp = chrono::Utc::now().timestamp_nanos_opt().unwrap() as u64;
+        if node_name.is_empty() || !re_node_name.is_match(&node_name) {
+            return Err(ValidationErrors::new());
+        }
+
+        if tags.is_empty() || tags.iter().any(|t| (t.is_empty() || !re_node_id.is_match(t))) {
+            return Err(ValidationErrors::new());
+        }
+
+        let timestamp = Utc::now().timestamp_nanos() as u64;
         let hash = utils::generate_hash(token, timestamp, &node_id, is_replica, &tags);
 
         let stmt = LoginStatement {
@@ -67,7 +73,7 @@ impl LoginStatement {
         Ok(stmt)
     }
 
-    pub fn validate_hash(&self, token: &str) -> bool {
+    fn validate_hash(&self, token: &str) -> bool {
         let expected = utils::generate_hash(
             token,
             self.timestamp,
@@ -77,20 +83,27 @@ impl LoginStatement {
         );
         self.hash.as_bytes().ct_eq(expected.as_bytes()).unwrap_u8() == 1
     }
+}
 
-    pub fn protocol(&self) -> MessageType {
+impl Statement for LoginStatement {
+    fn clone_box(&self) -> Box<dyn Statement> {
+        Box::new(self.clone())
+    }
+
+    fn protocol(&self) -> MessageType {
         MessageType::Login
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
         encode::to_vec(self)
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Self, decode::Error> {
-        decode::from_slice(data)
+    fn from_bytes(data: &[u8]) -> Result<Box<dyn Statement>, decode::Error> {
+        let stmt: LoginStatement = decode::from_slice(data)?;
+        Ok(Box::new(stmt))
     }
 
-    pub fn to_string(&self) -> String {
+    fn to_string(&self) -> String {
         format!(
             "LoginStatement{{Timestamp: {}, NodeID: {}, NodeName: {}, IsReplica: {}, Tags: {:?}}}",
             self.timestamp,

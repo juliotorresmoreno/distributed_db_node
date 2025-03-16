@@ -1,6 +1,7 @@
-use serde::{ Deserialize, Serialize };
-use rmp_serde::{ encode, decode };
+use serde::{Deserialize, Serialize};
+use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
+use crate::statement::Statement;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct EmptyStatement {
@@ -10,24 +11,31 @@ pub struct EmptyStatement {
 
 impl EmptyStatement {
     pub fn new(message_type: MessageType) -> Self {
-        return Self {
+        Self {
             message_type: message_type as u32,
-        };
+        }
+    }
+}
+
+impl Statement for EmptyStatement {
+    fn clone_box(&self) -> Box<dyn Statement> {
+        Box::new(self.clone())
     }
 
-    pub fn protocol(&self) -> MessageType {
-        return MessageType::from_id(self.message_type);
+    fn protocol(&self) -> MessageType {
+        MessageType::from_id(self.message_type)
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
         encode::to_vec(self)
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Self, decode::Error> {
-        decode::from_slice(data)
+    fn from_bytes(data: &[u8]) -> Result<Box<dyn Statement>, decode::Error> {
+        let stmt: EmptyStatement = decode::from_slice(data)?;
+        Ok(Box::new(stmt))
     }
 
-    pub fn to_string(&self) -> String {
-        format!("EmptyStatement{{MessageType: {:?}}}", self.message_type)
+    fn to_string(&self) -> String {
+        format!("EmptyStatement{{MessageType: {}}}", self.protocol().to_name())
     }
 }

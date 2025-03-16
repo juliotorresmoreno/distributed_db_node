@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::{validate::validate_alphanumunderscore, Statement};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct ReleaseSavepointStatement {
@@ -21,20 +21,27 @@ impl ReleaseSavepointStatement {
         stmt.validate()?;
         Ok(stmt)
     }
+}
 
-    pub fn protocol(&self) -> MessageType {
+impl Statement for ReleaseSavepointStatement {
+    fn clone_box(&self) -> Box<dyn Statement> {
+        Box::new(self.clone())
+    }
+
+    fn protocol(&self) -> MessageType {
         MessageType::ReleaseSavepoint
     }
 
-    pub fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, encode::Error> {
         encode::to_vec(self)
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Self, decode::Error> {
-        decode::from_slice(data)
+    fn from_bytes(data: &[u8]) -> Result<Box<dyn Statement>, decode::Error> {
+        let stmt: ReleaseSavepointStatement = decode::from_slice(data)?;
+        Ok(Box::new(stmt))
     }
 
-    pub fn to_string(&self) -> String {
+    fn to_string(&self) -> String {
         format!(
             "ReleaseSavepointStatement{{TransactionID: {}, SavepointName: {}}}",
             self.transaction_id, self.savepoint_name

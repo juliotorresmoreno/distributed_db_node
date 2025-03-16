@@ -31,7 +31,7 @@ pub struct LoginStatement {
 }
 
 impl LoginStatement {
-    fn new(
+    pub fn new(
         token: &str,
         node_id: String,
         node_name: String,

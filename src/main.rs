@@ -4,13 +4,11 @@ mod utils;
 mod protocol;
 mod statement;
 mod managment;
-
-use utils::logger::init_logger;
-
+mod transport;
 
 #[tokio::main]
 async fn main() {
-    init_logger();
+    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
 
     println!("Starting server...");
 }

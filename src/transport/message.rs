@@ -3,6 +3,8 @@ use std::net::TcpStream;
 use std::time::{ SystemTime, UNIX_EPOCH };
 use uuid::Uuid;
 use byteorder::{ BigEndian, ReadBytesExt, WriteBytesExt };
+use crate::protocol::MessageType;
+use crate::statement::Statement;
 
 const START_MARKER: u32 = 0xdeadbeef;
 const END_MARKER: u32 = 0xbeefdead;
@@ -13,14 +15,6 @@ const MESSAGE_HEADER_SIZE: usize = 37;
 pub enum MessageTypeFlag {
     RequestMessage = 1,
     ResponseMessage = 2,
-}
-
-#[repr(u32)]
-#[derive(Debug, Clone, Copy)]
-pub enum MessageType {
-    Unknown = 0,
-    CreateDatabase = 1,
-    DropDatabase = 2,
 }
 
 #[derive(Debug, Clone)]
@@ -72,10 +66,11 @@ impl MessageHeader {
         let mut message_id = [0u8; 16];
         buffer.read_exact(&mut message_id)?;
 
-        let message_type = match buffer.read_u32::<BigEndian>()? {
-            1 => MessageType::CreateDatabase,
-            2 => MessageType::DropDatabase,
-            _ => MessageType::Unknown,
+        let message_type = match buffer.read_u32::<BigEndian>() {
+            Ok(value) => MessageType::from_id(value),
+            Err(_) => {
+                return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid message type"));
+            }
         };
 
         let message_flag = match buffer.read_u8()? {
@@ -104,6 +99,10 @@ impl MessageHeader {
             end_marker,
         })
     }
+
+    pub fn message_id_string(&self) -> String {
+        Uuid::from_slice(&self.message_id).unwrap().to_string()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -113,10 +112,11 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn new(message_type: MessageType, message_flag: MessageTypeFlag, body: Vec<u8>) -> Self {
+    pub fn new(message_type: MessageType, stmt: &impl Statement) -> Self {
+        let body = stmt.to_bytes().unwrap();
         let body_size = body.len() as u32;
         Self {
-            header: MessageHeader::new(message_type, message_flag, body_size),
+            header: MessageHeader::new(message_type, MessageTypeFlag::RequestMessage, body_size),
             body,
         }
     }

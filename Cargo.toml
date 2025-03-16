@@ -26,16 +26,19 @@ uuid = { version = "1.15.1", features = ["v4"] } # Soporte para UUIDs
 base64 = { version = "0.22" } # Soporte para codificación base64
 hex = "0.4" # Soporte para codificación hexadecimal
 futures = "0.3" # Soporte para futuros
-tokio-tungstenite = "0.26.2"
-url = "2.3"
+tokio-tungstenite = "0.26.2" # Soporte para WebSockets
+url = "2.3" # Soporte para URLs
 hmac = "0.12"
-sha2 = "0.10"
-reqwest = { version = "0.12.12", features = ["json"] }
-chrono = "0.4"
-lazy_static = "1.5.0"
+sha2 = "0.10" # Soporte para SHA-256
+reqwest = { version = "0.12.12", features = ["json"] } # Cliente HTTP
+chrono = "0.4" # Soporte para fechas y horas
+lazy_static = "1.5.0" # Soporte para variables estáticas
 validator = { version = "0.20", features = ["derive"] }
-regex = "1.11.1"
-subtle = "2.6.1"
+regex = "1.11.1"  # Soporte para expresiones regulares
+subtle = "2.6.1" # Soporte para operaciones criptográficas
+byteorder = "1.5" # Soporte para orden de bytes
+log4rs = "1.0" # Logger
+
 
 [dev-dependencies]
 assertables = "9.5" # Para pruebas

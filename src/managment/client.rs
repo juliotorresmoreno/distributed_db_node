@@ -74,7 +74,6 @@ impl MessageClient {
 
         client.init_connections().await;
 
-
         return Ok(client);
     }
 
@@ -137,7 +136,7 @@ impl MessageClient {
         let mut selected = conn_pool.pop().unwrap();
         selected.loan_count += 1;
 
-        Ok(selected.conn)
+        return Ok(selected.conn);
     }
 
     pub async fn free_connection(&self, conn: ZenithConnection) {

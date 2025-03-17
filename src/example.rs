@@ -16,7 +16,7 @@ const TOKEN: &str = "my-secure-token";
 
 #[allow(dead_code)]
 pub async fn start_server() {
-    let client_instance = MessageClient::new(MessageConfig {
+    let result = MessageClient::new(MessageConfig {
         server_addr: SERVER_ADDR.to_string(),
         token: TOKEN.to_string(),
         node_id: "global_master".to_string(),
@@ -25,12 +25,20 @@ pub async fn start_server() {
         max_conn: MAX_CONNECTIONS_PER_CLIENT,
         min_conn: MIN_CONNECTIONS_PER_CLIENT,
         timeout: TIMEOUT,
-    });
+    }).await;
+    if let Err(e) = result {
+        println!("Error: {:?}", e);
+        return;
+    }
+
+    let client_instance = result.unwrap();
 
     println!("Starting server...");
     time::sleep(std::time::Duration::from_secs(1)).await;
 
-    let mut conn = match client_instance.allocate_connection().await {
+    // Trying to get a connection
+    #[allow(unused_variables)]
+    let conn = match client_instance.allocate_connection().await {
         Ok(conn) => conn,
         Err(e) => {
             println!("Error: {:?}", e);
@@ -38,10 +46,6 @@ pub async fn start_server() {
         }
     };
 
-    match client_instance.authenticate(&mut conn).await {
-        Ok(_) => println!("Authenticated!"),
-        Err(e) => println!("Error: {:?}", e),
-    }
-
+    // Wait for a long time to simulate the server being up
     time::sleep(std::time::Duration::from_secs(60 * 60)).await;
 }

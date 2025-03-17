@@ -54,7 +54,9 @@ pub struct MessageConfig {
 
 #[allow(dead_code)]
 impl MessageClient {
-    pub fn new(config: MessageConfig) -> Self {
+    pub async fn new(
+        config: MessageConfig
+    ) -> Result<MessageClient, Box<dyn std::error::Error + Send + Sync>> {
         let min_conn = config.min_conn.max(1);
         let max_conn = config.max_conn.max(min_conn);
 
@@ -70,38 +72,53 @@ impl MessageClient {
             timeout: config.timeout,
         };
 
-        client.init_connections();
-        client
+        client.init_connections().await;
+
+
+        return Ok(client);
     }
 
-    fn init_connections(&self) {
+    async fn init_connections(&self) {
         for _ in 0..self.min_conn {
-            self.retry_create_connection();
+            let _ = self.retry_create_connection();
         }
     }
 
-    fn retry_create_connection(&self) {
-        let server_addr = self.server_addr.clone();
-        let timeout = self.timeout;
+    async fn retry_create_connection(&self) {
         let connections = self.connections.clone();
 
-        tokio::spawn(async move {
-            loop {
-                let result = dial_timeout(&server_addr, timeout).await;
-                if let Ok(conn) = result {
-                    info!("Successfully connected to the server.");
-                    let mut conn_pool = connections.lock().unwrap();
-                    conn_pool.push(ConnectionPool {
-                        conn,
-                        loan_count: 0,
-                    });
-                    return;
-                }
-                warn!("Retrying connection...");
-
-                tokio::time::sleep(RECONNECT_INTERVAL).await;
+        loop {
+            let result = self.create_connection().await;
+            if let Ok(conn) = result {
+                info!("Successfully connected to the server.");
+                let mut conn_pool = connections.lock().unwrap();
+                conn_pool.push(ConnectionPool {
+                    conn,
+                    loan_count: 0,
+                });
+                return;
             }
-        });
+            warn!("Retrying connection...");
+
+            tokio::time::sleep(RECONNECT_INTERVAL).await;
+        }
+    }
+
+    async fn create_connection(
+        &self
+    ) -> Result<ZenithConnection, Box<dyn std::error::Error + Send + Sync>> {
+        let result = dial_timeout(&self.server_addr, self.timeout).await;
+        let mut conn = match result {
+            Ok(conn) => conn,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+
+        println!("Connected to the server.");
+        self.authenticate(&mut conn).await?;
+
+        return Ok(conn);
     }
 
     pub async fn allocate_connection(
@@ -110,29 +127,56 @@ impl MessageClient {
         let mut conn_pool = self.connections.lock().unwrap();
 
         if conn_pool.is_empty() && conn_pool.len() < self.max_conn {
-            self.retry_create_connection();
+            let _ = self.retry_create_connection().await;
         }
 
         if conn_pool.is_empty() {
             return Err("No available connections".into());
         }
 
-        let conn = conn_pool.pop().unwrap();
-        Ok(conn.conn)
+        let mut selected = conn_pool.pop().unwrap();
+        selected.loan_count += 1;
+
+        Ok(selected.conn)
     }
 
     pub async fn free_connection(&self, conn: ZenithConnection) {
-        let mut conn_pool = self.connections.lock().unwrap();
-        let conn_pool_item = ConnectionPool {
-            conn,
-            loan_count: 0,
-        };
-        conn_pool.push(conn_pool_item);
-    }
-}
+        let mut connections = self.connections.lock().unwrap();
+        let mut temp: Vec<_> = connections.drain().collect();
 
-#[allow(dead_code)]
-impl MessageClient {
+        for conn_pool in temp.iter_mut() {
+            if conn_pool.conn.id == conn.id {
+                conn_pool.loan_count -= 1;
+                break;
+            }
+        }
+
+        for item in temp {
+            connections.push(item);
+        }
+
+        if connections.len() > self.min_conn {
+            let _ = self.cleanup_idle_connections(&mut connections).await;
+        }
+    }
+
+    async fn cleanup_idle_connections(&self, connections: &mut BinaryHeap<ConnectionPool>) {
+        let temp: Vec<_> = connections.drain().collect();
+        let mut retained = Vec::new();
+
+        for mut conn_pool in temp.into_iter() {
+            if retained.len() < self.min_conn || conn_pool.loan_count > 0 {
+                retained.push(conn_pool);
+            } else {
+                let _ = conn_pool.conn.close().await;
+            }
+        }
+
+        for item in retained {
+            connections.push(item);
+        }
+    }
+
     pub async fn authenticate(
         &self,
         conn: &mut ZenithConnection
@@ -145,7 +189,6 @@ impl MessageClient {
             self.address.clone(),
             self.tags.clone()
         )?;
-        println!("Login statement: {:?}", stmt.hash);
         let login_message = Message::new(protocol::MessageType::Login, &stmt);
         let response = match conn.send(&login_message).await {
             Ok(response) => response,
@@ -157,6 +200,9 @@ impl MessageClient {
         if response.header.message_type != MessageType::Login {
             return Err("Authentication failed".into());
         }
-        Ok(())
+
+        println!("Successfully authenticated with the server.");
+
+        return Ok(());
     }
 }

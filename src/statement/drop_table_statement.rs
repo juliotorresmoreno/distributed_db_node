@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::{Statement, validate::validate_alphanumunderscore};
+use crate::statement::{ Statement, validate_alphanumunderscore };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct DropTableStatement {
@@ -11,6 +11,7 @@ pub struct DropTableStatement {
     pub table_name: String,
 }
 
+#[allow(dead_code)]
 impl DropTableStatement {
     pub fn new(table_name: String) -> Result<Self, ValidationErrors> {
         let stmt = DropTableStatement { table_name };

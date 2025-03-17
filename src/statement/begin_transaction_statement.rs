@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors};
-use rmp_serde::{encode, decode};
-use crate::statement::{validate::validate_alphanumunderscore, Statement};
+use serde::{ Deserialize, Serialize };
+use validator::{ Validate, ValidationErrors };
+use rmp_serde::{ encode, decode };
+use crate::statement::{ validate_alphanumunderscore, Statement };
 use crate::protocol::MessageType;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -11,6 +11,7 @@ pub struct BeginTransactionStatement {
     pub transaction_id: String,
 }
 
+#[allow(dead_code)]
 impl BeginTransactionStatement {
     pub fn new(transaction_id: String) -> Result<Self, ValidationErrors> {
         let stmt = BeginTransactionStatement { transaction_id };
@@ -38,9 +39,6 @@ impl Statement for BeginTransactionStatement {
     }
 
     fn to_string(&self) -> String {
-        format!(
-            "BeginTransactionStatement{{TransactionID: {}}}",
-            self.transaction_id
-        )
+        format!("BeginTransactionStatement{{TransactionID: {}}}", self.transaction_id)
     }
 }

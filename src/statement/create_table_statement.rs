@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors};
-use rmp_serde::{encode, decode};
+use serde::{ Deserialize, Serialize };
+use validator::{ Validate, ValidationErrors };
+use rmp_serde::{ encode, decode };
 use crate::protocol::MessageType;
-use crate::statement::{Statement, validate::validate_alphanumunderscore, ColumnDefinition};
+use crate::statement::{ Statement, validate_alphanumunderscore, ColumnDefinition };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct CreateTableStatement {
@@ -18,6 +18,7 @@ pub struct CreateTableStatement {
     pub storage: Option<String>,
 }
 
+#[allow(dead_code)]
 impl CreateTableStatement {
     pub fn new(
         table_name: String,

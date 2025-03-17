@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::validate_alphanumunderscore;
 use crate::protocol::MessageType;
 use crate::statement::Statement;
 
@@ -17,6 +17,7 @@ pub struct InsertStatement {
     pub values: HashMap<String, serde_json::Value>,
 }
 
+#[allow(dead_code)]
 impl InsertStatement {
     pub fn new(table_name: String, values: HashMap<String, serde_json::Value>) -> Result<Self, ValidationErrors> {
         let stmt = InsertStatement { table_name, values };

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::{validate::validate_alphanumunderscore, Statement};
+use crate::statement::{ validate_alphanumunderscore, Statement };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct DeleteStatement {
@@ -14,6 +14,7 @@ pub struct DeleteStatement {
     pub r#where: Option<String>,
 }
 
+#[allow(dead_code)]
 impl DeleteStatement {
     pub fn new(table_name: String, r#where: Option<String>) -> Result<Self, ValidationErrors> {
         let stmt = DeleteStatement { table_name, r#where };

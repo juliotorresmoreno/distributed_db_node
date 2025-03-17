@@ -28,6 +28,7 @@ pub struct MessageHeader {
     pub end_marker: u32,
 }
 
+#[allow(dead_code)]
 impl MessageHeader {
     pub fn new(message_type: MessageType, message_flag: MessageTypeFlag, body_size: u32) -> Self {
         Self {
@@ -111,6 +112,7 @@ pub struct Message {
     pub body: Vec<u8>,
 }
 
+#[allow(dead_code)]
 impl Message {
     pub fn new(message_type: MessageType, stmt: &impl Statement) -> Self {
         let body = stmt.to_bytes().unwrap();
@@ -124,7 +126,7 @@ impl Message {
     pub fn serialize(&self) -> Vec<u8> {
         let mut buffer = self.header.serialize();
         buffer.extend_from_slice(&self.body);
-        buffer
+        return buffer;
     }
 
     pub fn deserialize(buffer: &[u8]) -> io::Result<Self> {

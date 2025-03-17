@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::{validate::validate_alphanumunderscore, Statement};
+use crate::statement::{ validate_alphanumunderscore, Statement };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct SavepointStatement {
@@ -15,6 +15,7 @@ pub struct SavepointStatement {
     pub savepoint_name: String,
 }
 
+#[allow(dead_code)]
 impl SavepointStatement {
     pub fn new(transaction_id: String, savepoint_name: String) -> Result<Self, ValidationErrors> {
         let stmt = SavepointStatement { transaction_id, savepoint_name };

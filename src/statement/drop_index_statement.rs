@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::validate_alphanumunderscore;
 use crate::statement::Statement;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -16,6 +16,7 @@ pub struct DropIndexStatement {
     pub table_name: String,
 }
 
+#[allow(dead_code)]
 impl DropIndexStatement {
     pub fn new(index_name: String, table_name: String) -> Result<Self, ValidationErrors> {
         let stmt = DropIndexStatement { index_name, table_name };

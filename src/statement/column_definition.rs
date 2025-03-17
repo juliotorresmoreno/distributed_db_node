@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
 use validator::Validate;
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::validate_alphanumunderscore;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct ColumnDefinition {
@@ -28,6 +28,7 @@ pub struct ColumnDefinition {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ColumnsDefinition(pub Vec<ColumnDefinition>);
 
+#[allow(dead_code)]
 impl ColumnsDefinition {
     pub fn len(&self) -> usize {
         self.0.len()

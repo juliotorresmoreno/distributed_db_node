@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::protocol::MessageType;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct UnsupportedStatementError {
     pub message_type: MessageType,
@@ -14,6 +15,7 @@ impl fmt::Display for UnsupportedStatementError {
     }
 }
 
+#[allow(dead_code)]
 impl UnsupportedStatementError {
     pub fn new(message_type: MessageType, message: String) -> Self {
         return Self {

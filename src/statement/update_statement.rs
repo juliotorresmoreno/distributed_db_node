@@ -3,7 +3,7 @@ use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use std::collections::HashMap;
 use crate::protocol::MessageType;
-use crate::statement::{validate::validate_alphanumunderscore, Statement};
+use crate::statement::{ validate_alphanumunderscore, Statement };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct UpdateStatement {
@@ -19,6 +19,7 @@ pub struct UpdateStatement {
     pub where_clause: String,
 }
 
+#[allow(dead_code)]
 impl UpdateStatement {
     pub fn new(table_name: String, updates: HashMap<String, serde_json::Value>, where_clause: String) -> Result<Self, ValidationErrors> {
         let stmt = UpdateStatement { table_name, updates, where_clause };

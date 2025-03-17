@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::{validate::validate_alphanumunderscore, Statement};
+use crate::statement::{ validate_alphanumunderscore, Statement };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct SelectStatement {
@@ -17,6 +17,7 @@ pub struct SelectStatement {
     pub r#where: String,
 }
 
+#[allow(dead_code)]
 impl SelectStatement {
     pub fn new(table_name: String, columns: Vec<String>, r#where: String) -> Result<Self, ValidationErrors> {
         let stmt = SelectStatement { table_name, columns, r#where };

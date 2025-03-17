@@ -26,16 +26,21 @@ pub struct LoginStatement {
     #[serde(rename = "node_id")]
     pub node_id: String,
 
+    #[serde(rename = "address")]
+    pub address: String,
+
     #[serde(rename = "tags")]
     pub tags: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl LoginStatement {
     pub fn new(
-        token: &str,
+        token: String,
         node_id: String,
         node_name: String,
         is_replica: bool,
+        address: String,
         tags: Vec<String>
     ) -> Result<Self, ValidationErrors> {
         if token.is_empty() {
@@ -57,8 +62,8 @@ impl LoginStatement {
             return Err(ValidationErrors::new());
         }
 
-        let timestamp = Utc::now().timestamp_nanos() as u64;
-        let hash = utils::generate_hash(token, timestamp, &node_id, is_replica, &tags);
+        let timestamp = Utc::now().timestamp_nanos_opt().unwrap() as u64;
+        let hash = utils::generate_hash(&token, timestamp, &node_id, is_replica, &tags);
 
         let stmt = LoginStatement {
             timestamp,
@@ -66,6 +71,7 @@ impl LoginStatement {
             hash,
             node_name,
             node_id,
+            address,
             tags,
         };
 

@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationErrors};
-use rmp_serde::{encode, decode};
-use crate::statement::{Statement, validate::validate_alphanumunderscore};
+use serde::{ Deserialize, Serialize };
+use validator::{ Validate, ValidationErrors };
+use rmp_serde::{ encode, decode };
+use crate::statement::{ Statement, validate_alphanumunderscore };
 use crate::protocol::MessageType;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -15,6 +15,7 @@ pub struct AlterTableStatement {
     pub changes: String,
 }
 
+#[allow(dead_code)]
 impl AlterTableStatement {
     pub fn new(table_name: String, changes: String) -> Result<Self, ValidationErrors> {
         let stmt = AlterTableStatement { table_name, changes };

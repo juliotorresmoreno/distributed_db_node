@@ -1,7 +1,7 @@
 use serde::{ Deserialize, Serialize };
 use validator::{ Validate, ValidationErrors };
 use rmp_serde::{ encode, decode };
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::validate_alphanumunderscore;
 use crate::protocol::MessageType;
 use crate::statement::Statement;
 
@@ -20,6 +20,7 @@ pub struct CreateIndexStatement {
     pub columns: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl CreateIndexStatement {
     pub fn new(
         index_name: String,

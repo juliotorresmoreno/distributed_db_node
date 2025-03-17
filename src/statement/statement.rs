@@ -19,6 +19,7 @@ impl Clone for Box<dyn Statement> {
     }
 }
 
+#[allow(dead_code)]
 pub fn deserialize_statement(
     message_type: MessageType,
     data: &[u8]

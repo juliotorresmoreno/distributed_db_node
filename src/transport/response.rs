@@ -1,12 +1,14 @@
 use std::error::Error;
 use std::fmt;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ExecutionResult<T> {
     pub result: Option<T>,
     pub error: Option<Box<dyn Error + Send + Sync>>,
 }
 
+#[allow(dead_code)]
 impl<T> ExecutionResult<T> {
     pub fn success(result: T) -> Self {
         Self {
@@ -37,22 +39,3 @@ impl fmt::Display for TimeoutError {
 }
 
 impl Error for TimeoutError {}
-
-pub const ERR_TIMEOUT: TimeoutError = TimeoutError;
-
-fn main() {
-    let success_result: ExecutionResult<String> = ExecutionResult::success("OK".to_string());
-    let error_result: ExecutionResult<()> = ExecutionResult::failure(ERR_TIMEOUT);
-
-    if success_result.is_success() {
-        println!("Success: {:?}", success_result.result);
-    } else {
-        println!("Error: {:?}", success_result.error);
-    }
-
-    if error_result.is_success() {
-        println!("Success: {:?}", error_result.result);
-    } else {
-        println!("Error: {:?}", error_result.error);
-    }
-}

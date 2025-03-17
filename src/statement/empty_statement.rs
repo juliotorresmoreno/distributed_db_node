@@ -9,6 +9,7 @@ pub struct EmptyStatement {
     pub message_type: u32,
 }
 
+#[allow(dead_code)]
 impl EmptyStatement {
     pub fn new(message_type: MessageType) -> Self {
         Self {

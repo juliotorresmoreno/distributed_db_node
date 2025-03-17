@@ -8,6 +8,7 @@ use log::{ error, warn };
 use crate::transport::Message;
 use std::ptr;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ZenithConnection {
     conn: tokio::net::TcpStream,
@@ -19,6 +20,7 @@ pub struct ZenithConnection {
 
 impl Eq for ZenithConnection {}
 
+#[allow(dead_code)]
 impl ZenithConnection {
     pub async fn connect(
         address: &str,

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::{validate::validate_alphanumunderscore, Statement};
+use crate::statement::{ validate_alphanumunderscore, Statement };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct RollbackStatement {
@@ -11,6 +11,7 @@ pub struct RollbackStatement {
     pub transaction_id: String,
 }
 
+#[allow(dead_code)]
 impl RollbackStatement {
     pub fn new(transaction_id: String) -> Result<Self, ValidationErrors> {
         let stmt = RollbackStatement { transaction_id };

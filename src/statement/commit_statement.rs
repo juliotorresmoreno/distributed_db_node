@@ -1,7 +1,7 @@
 use serde::{ Deserialize, Serialize };
 use validator::{ Validate, ValidationErrors };
 use rmp_serde::{ encode, decode };
-use crate::statement::{ validate::validate_alphanumunderscore, Statement };
+use crate::statement::{ validate_alphanumunderscore, Statement };
 use crate::protocol::MessageType;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -11,6 +11,7 @@ pub struct CommitStatement {
     pub transaction_id: String,
 }
 
+#[allow(dead_code)]
 impl CommitStatement {
     pub fn new(transaction_id: String) -> Result<Self, ValidationErrors> {
         let stmt = CommitStatement { transaction_id };

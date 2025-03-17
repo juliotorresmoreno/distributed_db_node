@@ -14,6 +14,7 @@ pub struct MessageClient {
     server_addr: String,
     token: String,
     node_id: String,
+    address: String,
     tags: Vec<String>,
     connections: Arc<Mutex<BinaryHeap<ConnectionPool>>>,
     max_conn: usize,
@@ -44,12 +45,14 @@ pub struct MessageConfig {
     pub server_addr: String,
     pub token: String,
     pub node_id: String,
+    pub address: String,
     pub tags: Vec<String>,
     pub min_conn: usize,
     pub max_conn: usize,
     pub timeout: Duration,
 }
 
+#[allow(dead_code)]
 impl MessageClient {
     pub fn new(config: MessageConfig) -> Self {
         let min_conn = config.min_conn.max(1);
@@ -59,6 +62,7 @@ impl MessageClient {
             server_addr: config.server_addr,
             token: config.token,
             node_id: config.node_id,
+            address: config.address,
             tags: config.tags,
             connections: Arc::new(Mutex::new(BinaryHeap::new())),
             max_conn,
@@ -127,18 +131,21 @@ impl MessageClient {
     }
 }
 
+#[allow(dead_code)]
 impl MessageClient {
-    async fn authenticate(
+    pub async fn authenticate(
         &self,
         conn: &mut ZenithConnection
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let stmt = LoginStatement::new(
-            &self.token,
+            self.token.clone(),
             self.node_id.clone(),
             self.node_id.clone(),
             false,
+            self.address.clone(),
             self.tags.clone()
         )?;
+        println!("Login statement: {:?}", stmt.hash);
         let login_message = Message::new(protocol::MessageType::Login, &stmt);
         let response = match conn.send(&login_message).await {
             Ok(response) => response,

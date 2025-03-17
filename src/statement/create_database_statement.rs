@@ -1,7 +1,7 @@
 use serde::{ Deserialize, Serialize };
 use validator::{ Validate, ValidationErrors };
 use rmp_serde::{ encode, decode };
-use crate::statement::{ Statement, validate::validate_alphanumunderscore };
+use crate::statement::{ Statement, validate_alphanumunderscore };
 use crate::protocol::MessageType;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -11,6 +11,7 @@ pub struct CreateDatabaseStatement {
     pub database_name: String,
 }
 
+#[allow(dead_code)]
 impl CreateDatabaseStatement {
     pub fn new(database_name: String) -> Result<Self, ValidationErrors> {
         let stmt = CreateDatabaseStatement { database_name };

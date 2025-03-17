@@ -2,7 +2,7 @@ use serde::{ Deserialize, Serialize };
 use validator::{ Validate, ValidationErrors };
 use rmp_serde::{ encode, decode };
 use std::collections::HashMap;
-use crate::statement::{ validate::validate_alphanumunderscore, Statement };
+use crate::statement::{ Statement, validate_alphanumunderscore };
 use crate::protocol::MessageType;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -19,6 +19,7 @@ pub struct UpsertStatement {
     pub unique_key: String,
 }
 
+#[allow(dead_code)]
 impl UpsertStatement {
     pub fn new(
         table_name: String,

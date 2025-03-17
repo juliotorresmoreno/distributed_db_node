@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
 use rmp_serde::{encode, decode};
 use crate::protocol::MessageType;
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::validate_alphanumunderscore;
 use crate::statement::Statement;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
@@ -12,6 +12,7 @@ pub struct DescribeTableStatement {
     pub table_name: String,
 }
 
+#[allow(dead_code)]
 impl DescribeTableStatement {
     pub fn new(table_name: String) -> Result<Self, ValidationErrors> {
         let stmt = DescribeTableStatement { table_name };

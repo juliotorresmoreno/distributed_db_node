@@ -3,7 +3,7 @@ use validator::{ Validate, ValidationErrors };
 use rmp_serde::{ encode, decode };
 use crate::protocol::MessageType;
 use crate::statement::Statement;
-use crate::statement::validate::validate_alphanumunderscore;
+use crate::statement::validate_alphanumunderscore;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Validate)]
 pub struct DropDatabaseStatement {
@@ -35,6 +35,7 @@ impl Statement for DropDatabaseStatement {
     }
 }
 
+#[allow(dead_code)]
 impl DropDatabaseStatement {
     fn new(database_name: String) -> Result<Self, ValidationErrors> {
         let stmt = DropDatabaseStatement { database_name };

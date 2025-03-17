@@ -79,27 +79,10 @@ impl MessageClient {
 
     async fn init_connections(&self) {
         for _ in 0..self.min_conn {
-            let _ = self.retry_create_connection();
-        }
-    }
-
-    async fn retry_create_connection(&self) {
-        let connections = self.connections.clone();
-
-        loop {
-            let result = self.create_connection().await;
-            if let Ok(conn) = result {
-                info!("Successfully connected to the server.");
-                let mut conn_pool = connections.lock().unwrap();
-                conn_pool.push(ConnectionPool {
-                    conn,
-                    loan_count: 0,
-                });
-                return;
-            }
-            warn!("Retrying connection...");
-
-            tokio::time::sleep(RECONNECT_INTERVAL).await;
+            let self_clone = Arc::new(self.clone());
+            tokio::spawn(async move {
+                let _ = self_clone.retry_create_connection().await;
+            });
         }
     }
 
@@ -114,10 +97,51 @@ impl MessageClient {
             }
         };
 
+        let conn_clone = conn.clone();
+        let self_clone = Arc::new(self.clone());
+
+        tokio::spawn(async move {
+            conn_clone.on_close().await;
+            let _ = self_clone.handle_connection_failure(conn_clone);
+            println!("Connection closed.");
+        });
+
         println!("Connected to the server.");
-        self.authenticate(&mut conn).await?;
+        match self.authenticate(&mut conn).await {
+            Ok(_) => {
+                info!("Successfully authenticated with the server.");
+            }
+            Err(e) => {
+                warn!("Failed to authenticate with the server: {:?}", e);
+                let _ = conn.close().await;
+                return Err(e);
+            }
+        }
 
         return Ok(conn);
+    }
+
+    pub async fn handle_connection_failure(
+        &self,
+        failed_conn: ZenithConnection
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut connections = self.connections.lock().unwrap();
+        let mut temp: Vec<_> = connections.drain().collect();
+
+        temp.retain(|cp| cp.conn != failed_conn);
+
+        for item in temp {
+            connections.push(item);
+        }
+
+        drop(connections);
+
+        let self_clone = Arc::new(self.clone());
+        tokio::spawn(async move {
+            let _ = self_clone.retry_create_connection().await;
+        });
+
+        return Ok(());
     }
 
     pub async fn allocate_connection(
@@ -126,7 +150,10 @@ impl MessageClient {
         let mut conn_pool = self.connections.lock().unwrap();
 
         if conn_pool.is_empty() && conn_pool.len() < self.max_conn {
-            let _ = self.retry_create_connection().await;
+            let self_clone = Arc::new(self.clone());
+            tokio::spawn(async move {
+                let _ = self_clone.retry_create_connection().await;
+            });
         }
 
         if conn_pool.is_empty() {
@@ -137,6 +164,24 @@ impl MessageClient {
         selected.loan_count += 1;
 
         return Ok(selected.conn);
+    }
+
+    pub async fn retry_create_connection(
+        self: Arc<Self>
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        loop {
+            match self.create_connection().await {
+                Ok(conn) => {
+                    let mut conn_pool = self.connections.lock().unwrap();
+                    conn_pool.push(ConnectionPool { conn, loan_count: 0 });
+                    return Ok(());
+                }
+                Err(_) => {
+                    warn!("Retrying connection...");
+                    tokio::time::sleep(RECONNECT_INTERVAL).await;
+                }
+            }
+        }
     }
 
     pub async fn free_connection(&self, conn: ZenithConnection) {

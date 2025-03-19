@@ -75,7 +75,6 @@ impl ZenithConnection {
             return Err(Box::new(e));
         }
 
-        println!("waiting for response");
         match response_receiver.await {
             Ok(response) => Ok(response),
             Err(e) => Err(Box::new(e)),
@@ -162,11 +161,8 @@ async fn start_server(config: StartServerConfig) {
 
         let response_map_clone = response_map.clone();
 
-        println!("Connection initialized");
         write_dump(&mut writer, message_receiver_clone, response_map_clone, rx_close).await;
         let _ = require_auth_sender.send(()).await;
-
-        println!("Connection closed");
     }
 }
 
@@ -198,8 +194,6 @@ async fn write_dump(
                     error!("Error writing message: {:?}", e);
                     return;
                 }
-
-                println!("Sent message: {:?}", message_with_response.message.header.message_id_string());
             }
         }
     }
@@ -234,7 +228,5 @@ async fn read_dump(
         if let Err(e) = response_sender.send(message.clone()) {
             error!("Error sending response: {:?}", e);
         }
-
-        println!("Received message: {:?}", message.header.message_id_string());
     }
 }

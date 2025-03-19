@@ -18,7 +18,7 @@ pub async fn start_server() {
         token: TOKEN.to_string(),
         node_id: "global_master".to_string(),
         address: "".to_string(),
-        tags: vec!["master".to_string()],
+        tags: vec!["slave".to_string()],
         max_conn: MAX_CONNECTIONS_PER_CLIENT,
         min_conn: MIN_CONNECTIONS_PER_CLIENT,
         timeout: TIMEOUT,

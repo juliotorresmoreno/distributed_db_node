@@ -1,10 +1,7 @@
 #![allow(unused_imports)]
 
 use crate::{
-    managment::{ MessageClient, MessageConfig },
-    transport,
-    protocol::message_type::MessageType,
-    statement,
+    managment::{ MessageClient, MessageConfig }, protocol::message_type::MessageType, statement::{self, CreateDatabaseStatement}, transport::{self, Message}
 };
 use tokio::time;
 
@@ -34,7 +31,6 @@ pub async fn start_server() {
     let client_instance = result.unwrap();
 
     println!("Starting server...");
-    time::sleep(std::time::Duration::from_secs(1)).await;
 
     // Trying to get a connection
     #[allow(unused_variables)]
@@ -45,6 +41,21 @@ pub async fn start_server() {
             return;
         }
     };
+
+    // Send a message
+    let stmt = match CreateDatabaseStatement::new("my_database".to_string()) {
+        Ok(stmt) => stmt,
+        Err(e) => {
+            println!("Error: {:?}", e);
+            return;
+        }
+    };
+    let message = Message::new(MessageType::CreateDatabase, &stmt);
+    let result = conn.send(&message).await;
+    if let Err(e) = result {
+        println!("Error: {:?}", e);
+        return;
+    }
 
     // Wait for a long time to simulate the server being up
     time::sleep(std::time::Duration::from_secs(60 * 60)).await;

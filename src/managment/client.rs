@@ -22,7 +22,7 @@ pub struct MessageClient {
     timeout: Duration,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct ConnectionPool {
     conn: ZenithConnection,
     loan_count: usize,
@@ -78,7 +78,7 @@ impl MessageClient {
     }
 
     async fn init_connections(&self) {
-        let mut handles = Vec::new();
+        let mut handles: Vec<tokio::task::JoinHandle<()>> = Vec::new();
 
         for _ in 0..self.min_conn {
             let self_clone = Arc::new(self.clone());
@@ -88,9 +88,7 @@ impl MessageClient {
             handles.push(handle);
         }
 
-        for handle in handles {
-            let _ = handle.await;
-        }
+        futures::future::join_all(handles).await;
     }
 
     async fn create_connection(
@@ -118,7 +116,6 @@ impl MessageClient {
             }
         });
 
-        println!("Connected to the server.");
         match self.authenticate(&mut conn).await {
             Ok(_) => {
                 info!("Successfully authenticated with the server.");
@@ -156,28 +153,6 @@ impl MessageClient {
         return Ok(());
     }
 
-    pub async fn allocate_connection(
-        &self
-    ) -> Result<ZenithConnection, Box<dyn std::error::Error + Send + Sync>> {
-        let mut conn_pool = self.connections.lock().unwrap();
-
-        if conn_pool.is_empty() && conn_pool.len() < self.max_conn {
-            let self_clone = Arc::new(self.clone());
-            tokio::spawn(async move {
-                let _ = self_clone.retry_create_connection().await;
-            });
-        }
-
-        if conn_pool.is_empty() {
-            return Err("No available connections".into());
-        }
-
-        let mut selected = conn_pool.pop().unwrap();
-        selected.loan_count += 1;
-
-        return Ok(selected.conn);
-    }
-
     pub async fn retry_create_connection(
         self: Arc<Self>
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -196,7 +171,33 @@ impl MessageClient {
         }
     }
 
-    pub async fn free_connection(&self, conn: ZenithConnection) {
+    pub async fn allocate_connection(
+        &self
+    ) -> Result<ZenithConnection, Box<dyn std::error::Error + Send + Sync>> {
+        let mut conn_pool = self.connections.lock().unwrap();
+
+        if conn_pool.is_empty() && conn_pool.len() < self.max_conn {
+            let self_clone = Arc::new(self.clone());
+            tokio::spawn(async move {
+                let _ = self_clone.retry_create_connection().await;
+            });
+        }
+
+        if conn_pool.is_empty() {
+            return Err("No available connections".into());
+        }
+
+        let mut selected: ConnectionPool = conn_pool.pop().unwrap();
+        selected.loan_count += 1;
+        conn_pool.push(selected.clone());
+
+        return Ok(selected.conn);
+    }
+
+    pub fn free_connection(
+        &self,
+        conn: ZenithConnection
+    ) {
         let mut connections = self.connections.lock().unwrap();
         let mut temp: Vec<_> = connections.drain().collect();
 
@@ -208,11 +209,13 @@ impl MessageClient {
         }
 
         for item in temp {
-            connections.push(item);
-        }
-
-        if connections.len() > self.min_conn {
-            let _ = self.cleanup_idle_connections(&mut connections).await;
+            if item.loan_count > 0 || connections.len() < self.min_conn {
+                connections.push(item);
+            } else {
+                tokio::spawn(async move {
+                    let _ = item.conn.close().await;
+                });
+            }
         }
     }
 
@@ -245,7 +248,7 @@ impl MessageClient {
             self.address.clone(),
             self.tags.clone()
         )?;
-        let login_message = Message::new(protocol::MessageType::Login, &stmt);        
+        let login_message = Message::new(protocol::MessageType::Login, &stmt);
         let response = match conn.send(&login_message).await {
             Ok(response) => response,
             Err(e) => {

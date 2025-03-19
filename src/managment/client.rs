@@ -78,11 +78,18 @@ impl MessageClient {
     }
 
     async fn init_connections(&self) {
+        let mut handles = Vec::new();
+
         for _ in 0..self.min_conn {
             let self_clone = Arc::new(self.clone());
-            tokio::spawn(async move {
+            let handle = tokio::spawn(async move {
                 let _ = self_clone.retry_create_connection().await;
             });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            let _ = handle.await;
         }
     }
 
@@ -97,13 +104,18 @@ impl MessageClient {
             }
         };
 
-        let conn_clone = conn.clone();
+        let mut conn_clone = conn.clone();
         let self_clone = Arc::new(self.clone());
 
         tokio::spawn(async move {
-            conn_clone.on_close().await;
-            let _ = self_clone.handle_connection_failure(conn_clone);
-            println!("Connection closed.");
+            loop {
+                conn_clone.on_require_auth().await;
+                println!("Re-authenticating with the server...");
+                if let Err(e) = self_clone.authenticate(&mut conn_clone).await {
+                    println!("Failed to authenticate with the server: {:?}", e);
+                    let _ = conn_clone.close().await;
+                }
+            }
         });
 
         println!("Connected to the server.");
@@ -208,7 +220,7 @@ impl MessageClient {
         let temp: Vec<_> = connections.drain().collect();
         let mut retained = Vec::new();
 
-        for mut conn_pool in temp.into_iter() {
+        for conn_pool in temp.into_iter() {
             if retained.len() < self.min_conn || conn_pool.loan_count > 0 {
                 retained.push(conn_pool);
             } else {
@@ -233,19 +245,19 @@ impl MessageClient {
             self.address.clone(),
             self.tags.clone()
         )?;
-        let login_message = Message::new(protocol::MessageType::Login, &stmt);
+        let login_message = Message::new(protocol::MessageType::Login, &stmt);        
         let response = match conn.send(&login_message).await {
             Ok(response) => response,
             Err(e) => {
+                println!("Failed to send login message: {:?}", e);
                 return Err(e);
             }
         };
 
         if response.header.message_type != MessageType::Login {
+            println!("Authentication failed");
             return Err("Authentication failed".into());
         }
-
-        println!("Successfully authenticated with the server.");
 
         return Ok(());
     }

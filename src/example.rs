@@ -85,16 +85,11 @@ pub async fn start_server() {
 
         let client_instance = client_instance.clone();
         let handle = tokio::spawn(async move {
-            match start_client(client_instance).await {
-                Ok(_) => {
-                    let mut successful_requests = successful_requests_clone.lock().await;
-                    *successful_requests += 1;
-                }
-                Err(_) => {
-                    let mut failed_requests = failed_requests_clone.lock().await;
-                    *failed_requests += 1;
-                }
-            }
+            let _ = start_client(
+                client_instance,
+                successful_requests_clone,
+                failed_requests_clone
+            ).await;
         });
 
         handles.push(handle);
@@ -103,9 +98,12 @@ pub async fn start_server() {
     futures::future::join_all(handles).await;
 
     let end_test_time = time::Instant::now();
-    let elapsed_time = end_test_time - start_test_time;
-    let requests_per_second =
-        (NUM_CLIENTS * MESSAGES_PER_CLIENT) / (elapsed_time.as_secs() as usize);
+    let mut elapsed_time = end_test_time - start_test_time;
+    let total_requests = NUM_CLIENTS * MESSAGES_PER_CLIENT;
+    if elapsed_time.as_secs() == 0 {
+        elapsed_time = time::Duration::from_secs(1);
+    }
+    let requests_per_second = total_requests / (elapsed_time.as_millis() as usize / 1000);
 
     let successful_requests = successful_requests.lock().await;
     let failed_requests = failed_requests.lock().await;
@@ -116,15 +114,15 @@ pub async fn start_server() {
     println!("Number of connections per client: {}", MAX_CONNECTIONS_PER_CLIENT);
     println!("Number of successful requests: {}", *successful_requests);
     println!("Number of failed requests: {}", *failed_requests);
-    println!("Total requests sent: {}", NUM_CLIENTS * MESSAGES_PER_CLIENT);
+    println!("Total requests sent: {}", total_requests);
     println!("Elapsed time: {:?}", elapsed_time);
     println!("requests per second: {}", requests_per_second);
-
-
 }
 
 async fn start_client(
-    client_instance: MessageClient
+    client_instance: MessageClient,
+    successfull_requests: Arc<Mutex<usize>>,
+    failed_requests: Arc<Mutex<usize>>
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Trying to get a connection
     #[allow(unused_variables)]
@@ -138,24 +136,40 @@ async fn start_client(
 
     let database_name = "my_database".to_string();
 
-    for _ in 0..MESSAGES_PER_CLIENT {
-        let stmt: CreateDatabaseStatement = match
-            CreateDatabaseStatement::new(database_name.clone())
-        {
-            Ok(stmt) => stmt,
-            Err(e) => {
+    let mut handlers: Vec<tokio::task::JoinHandle<()>> = Vec::new();
+
+    for i in 0..MESSAGES_PER_CLIENT {
+        let conn_clone = conn.clone();
+        let database_name = format!("{}_{}", database_name, i);
+        let successful_requests_clone = successfull_requests.clone();
+        let failed_requests_clone = failed_requests.clone();
+        let handler = tokio::spawn(async move {
+            let stmt = match CreateDatabaseStatement::new(database_name) {
+                Ok(stmt) => stmt,
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                    return;
+                }
+            };
+            let message = Message::new(MessageType::CreateTable, &stmt);
+            let result = conn_clone.send(&message).await;
+            if let Err(e) = result {
+                let mut failed_requests = failed_requests_clone.lock().await;
+                *failed_requests += 1;
+
                 println!("Error: {:?}", e);
-                return Err(Box::new(e));
+                return;
+            } else {
+                let mut successful_requests = successful_requests_clone.lock().await;
+                *successful_requests += 1;
             }
-        };
-        let message = Message::new(MessageType::CreateDatabase, &stmt);
-        let result = conn.send(&message).await;
-        if let Err(e) = result {
-            println!("Error: {:?}", e);
-            return Err(e);
-        }
+        });
+
+        handlers.push(handler);
     }
-    
+
+    futures::future::join_all(handlers).await;
+
     client_instance.free_connection(conn);
 
     return Ok(());

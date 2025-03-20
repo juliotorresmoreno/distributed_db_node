@@ -12,8 +12,8 @@ use tokio::time;
 
 const NUM_CLIENTS: usize = 50;
 const MESSAGES_PER_CLIENT: usize = 10000;
-const MAX_CONNECTIONS_PER_CLIENT: usize = 10;
-const MIN_CONNECTIONS_PER_CLIENT: usize = 100;
+const MAX_CONNECTIONS_PER_CLIENT: usize = 100;
+const MIN_CONNECTIONS_PER_CLIENT: usize = 200;
 const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 const SERVER_ADDR: &str = "127.0.0.1:8081";
 const TOKEN: &str = "my-secure-token";

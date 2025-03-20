@@ -98,7 +98,7 @@ pub async fn dial_timeout(
     timeout: Duration
 ) -> Result<ZenithConnection, Box<dyn std::error::Error + Send + Sync>> {
     let address_cloned = address.to_string();
-    let (message_sender, message_receiver) = mpsc::channel(32);
+    let (message_sender, message_receiver) = mpsc::channel(100);
     let id = NEXT_ID.fetch_add(1, Ordering::SeqCst);
     let (sender, receiver) = mpsc::channel(1);
 
